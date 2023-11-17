@@ -9,30 +9,35 @@ output: word_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## R Markdown
+Import lybraries for R and Python
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
-```{r cars}
-# Load the data
-# Test
-# test
-# Test 3 
-
+```{r}
 library(readxl)
-df = read_excel("CB-Insights_Global-Unicorn-Club_2023.xlsx")
-print(df)
-
+library(reticulate)
 ```
 
-## Including Plots
-
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
+```{python}
+import numpy as np 
+import pandas as pd
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+```{python}
+# Load the Data Frame
+unicorn_data = pd.read_excel('CB-Insights_Global-Unicorn-Club_2023.xlsx')
+```
+
+```{python}
+# Cleaning the data
+unicorn_data = unicorn_data.dropna(subset="Valuation ($B)")
+unicorn_data.loc[537, "Country"] = "Singapour"
+
+unicorn_data["Select Investors"].str.split(",", expand=True)
+
+unicorn_data.info()
+```
+
+
+```{r}
+py$unicorn_data[is.na(py$unicorn_data$`Select Investors`),]
+```
+
