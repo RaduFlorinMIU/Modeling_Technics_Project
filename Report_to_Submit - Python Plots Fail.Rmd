@@ -53,13 +53,16 @@ unicorn_data_cleaned.info()
 ```
 
 ```{python}
-
+fig, ax = plt.subplots()
 sns.countplot(
   data=unicorn_data_cleaned,
   x="Industry",
-  stat='count'  
+  stat='count',
+  ax=ax
   ).set(title="Distribution of the number of companies per Industry")
-plt.xticks(rotation=90)
+plt.setp(ax.get_xticklabels(), rotation=45, ha="right",
+         rotation_mode="anchor")
+plt.tight_layout()
 plt.show()
 
 ```
