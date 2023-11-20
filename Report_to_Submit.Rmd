@@ -59,6 +59,9 @@ unicorn_data_cleaned.info()
 ```
 
 ```{r}
+#| fig.width: 10
+#| fig.height: 6.4
+
 # Plotting the distribution of the number of companies per Industry
 ggplot(py$unicorn_data_cleaned, aes(x = Industry, color = Industry, fill = Industry)) +
   geom_bar(stat = "count") +

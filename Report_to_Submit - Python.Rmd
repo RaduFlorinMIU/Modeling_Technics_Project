@@ -53,7 +53,10 @@ unicorn_data_cleaned.info()
 ```
 
 ```{python}
+#| fig.width: 6.4
+#| fig.height: 6.4
 fig, ax = plt.subplots()
+
 sns.countplot(
   data=unicorn_data_cleaned,
   x="Industry",
@@ -64,28 +67,47 @@ plt.setp(ax.get_xticklabels(), rotation=45, ha="right",
          rotation_mode="anchor")
 plt.tight_layout()
 plt.show()
-
+plt.clf()
 ```
 
 
 
 ```{python}
-unicorn_data_cleaned.value_counts("Country")
+country_count = unicorn_data_cleaned.value_counts("Country")
+fig, ax = plt.subplots()
+
+sns.barplot(
+  x=country_count.index,
+  y=country_count.values, 
+  ax=ax
+)
+plt.setp(ax.get_xticklabels(), rotation=45, ha="right",
+         rotation_mode="anchor")
+         
+plt.tight_layout()
+plt.show()
+
 ```
 
 ```{python}
+#| fig.width: 10
+#| fig.height: 6
+
 sns.displot(
   data=unicorn_data_cleaned,
   x="Number_of_Investors",
   kind="hist", 
-  hue="Industry", 
-  multiple="dodge"
+  hue="Industry",
+  multiple = "dodge"
   )
 plt.title("Distribution of the number of investors per Industry")
+plt.tight_layout()
 plt.show()
 ```
 
 ```{python}
+#| fig.height: 5
+#| fig.width: 8
 sns.displot(
   data=unicorn_data_cleaned,
   x="Number_of_Investors",
@@ -93,21 +115,22 @@ sns.displot(
   fill=True
   )
 plt.title("Distribution of the number of investors")
+plt.tight_layout()
 plt.show()
+```
+
+```{python}
+#| fig.height: 5
+#| fig.width: 8
+
+sns.catplot(
+  
+)
 ```
 
 ```{r}
 py$unicorn_data_cleaned
 
 py$investors
-```
-
-```{r}
-library(ggplot2)
-
-# Plotting the distribution of the number of companies per Industry
-ggplot(py$unicorn_data_cleaned, aes(x = Industry)) +
-  geom_bar(stat = "count") +
-  labs(title = "Distribution of the number of companies per Industry")
 ```
 
