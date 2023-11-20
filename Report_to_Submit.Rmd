@@ -67,6 +67,7 @@ ggplot(py$unicorn_data_cleaned, aes(x = Industry, color = Industry, fill = Indus
 
 ```
 
+
 ```{r}
 ggplot(py$unicorn_data_cleaned, aes(x = Number_of_Investors, fill = Industry))+
   geom_histogram(position = "dodge", bins = 30, alpha = 0.7) +
@@ -86,5 +87,4 @@ py$unicorn_data_cleaned
 
 py$investors
 ```
-
 
