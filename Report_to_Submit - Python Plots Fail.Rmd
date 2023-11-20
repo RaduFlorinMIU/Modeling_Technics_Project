@@ -14,8 +14,6 @@ Import lybraries for R and Python
 ```{r}
 library(readxl)
 library(reticulate)
-library(ggplot2)
-
 ```
 
 ```{python}
@@ -23,7 +21,6 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt 
 import seaborn as sns
-from datetime import date
 ```
 
 ```{python}
@@ -33,8 +30,6 @@ unicorn_data = pd.read_excel('CB-Insights_Global-Unicorn-Club_2023.xlsx')
 
 ```{python}
 # Cleaning the data
-today = date.today()
-
 ## Removing useless columns
 unicorn_data = unicorn_data.dropna(subset="Valuation ($B)")
 
@@ -44,60 +39,61 @@ unicorn_data.loc[537, "Country"] = "Singapour"
 ## Removing ",," in "Select investors" corectly count  number of investors
 unicorn_data ["Select Investors"] = unicorn_data ["Select Investors"].str.replace(",,",",")
 
-## Counting the number of Investors
+# Counting the number of Investors
 unicorn_data["Number_of_Investors"] = unicorn_data["Select Investors"].str.split(",", expand=False).str.len()
 
-## Adding all the investors in a different column + renaming the columns
 investors = unicorn_data["Select Investors"].str.split(",", expand=True)
+
 unicorn_data_cleaned = unicorn_data.join(investors)
+
 unicorn_data_cleaned = unicorn_data_cleaned.rename(columns={0: "1st_investor", 1: "2nd_investor", 2: "3td_investor", 3: "4td_investor"})
 
 unicorn_data_cleaned.info()
 
-(pd.Timestamp.today() - unicorn_data_cleaned["Date Joined"]) / np.timedelta64(1,'Y')
-
-```
-
-```{r}
-# Plotting the distribution of the number of companies per Industry
-ggplot(py$unicorn_data_cleaned, aes(x = Industry, color = Industry, fill = Industry)) +
-  geom_bar(stat = "count") +
-  labs(title = "Distribution of the number of companies per Industry")+
-  theme(axis.text.x = element_text(angle = 45, hjust=1))
-=======
-```
-
-unicorn_data_cleaned.info()
-
 ```
 
 ```{python}
-sns.catplot(
+fig, ax = plt.subplots()
+sns.countplot(
   data=unicorn_data_cleaned,
   x="Industry",
-  kind="count", 
-  )
-plt.title("Distribution of the number of companies per Industry")
-plt.xticks(rotation=90)
+  stat='count',
+  ax=ax
+  ).set(title="Distribution of the number of companies per Industry")
+plt.setp(ax.get_xticklabels(), rotation=45, ha="right",
+         rotation_mode="anchor")
+plt.tight_layout()
 plt.show()
+
 ```
+
+
+
 ```{python}
 unicorn_data_cleaned.value_counts("Country")
 ```
+
+```{python}
+sns.displot(
+  data=unicorn_data_cleaned,
+  x="Number_of_Investors",
+  kind="hist", 
+  hue="Industry", 
+  multiple="dodge"
+  )
+plt.title("Distribution of the number of investors per Industry")
+plt.show()
 ```
 
-```{r}
-ggplot(py$unicorn_data_cleaned, aes(x = Number_of_Investors, fill = Industry))+
-  geom_histogram(position = "dodge", bins = 30, alpha = 0.7) +
-  ggtitle("Distribution of the number of investors per Industry") 
-  
-```
-
-```{r}
-ggplot(py$unicorn_data_cleaned, aes(x = Number_of_Investors )) +
-  geom_density(alpha = 0.7) +
-  ggtitle("Distribution of the number of investors") +
-  scale_fill_viridis_c()
+```{python}
+sns.displot(
+  data=unicorn_data_cleaned,
+  x="Number_of_Investors",
+  kind="kde",
+  fill=True
+  )
+plt.title("Distribution of the number of investors")
+plt.show()
 ```
 
 ```{r}
@@ -105,3 +101,13 @@ py$unicorn_data_cleaned
 
 py$investors
 ```
+
+```{r}
+library(ggplot2)
+
+# Plotting the distribution of the number of companies per Industry
+ggplot(py$unicorn_data_cleaned, aes(x = Industry)) +
+  geom_bar(stat = "count") +
+  labs(title = "Distribution of the number of companies per Industry")
+```
+
