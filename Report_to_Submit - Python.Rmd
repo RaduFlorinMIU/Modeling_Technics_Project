@@ -75,8 +75,6 @@ plt.clf()
 ```{python}
 country_count = unicorn_data_cleaned.value_counts("Country")
 fig, ax = plt.subplots()
-<<<<<<< HEAD
-
 sns.barplot(
   x=country_count.index,
   y=country_count.values, 
@@ -102,41 +100,11 @@ sns.displot(
   multiple = "dodge"
   )
 plt.title("Distribution of the number of investors per Industry")
-=======
 
-sns.barplot(
-  x=country_count.index,
-  y=country_count.values, 
-  ax=ax
-)
-plt.setp(ax.get_xticklabels(), rotation=45, ha="right",
-         rotation_mode="anchor")
-         
->>>>>>> 295fd0b15a78fb2a179c60b07417e052ab24fd20
 plt.tight_layout()
 plt.show()
-```
 
 ```{python}
-<<<<<<< HEAD
-=======
-#| fig.width: 10
-#| fig.height: 6
-
-sns.displot(
-  data=unicorn_data_cleaned,
-  x="Number_of_Investors",
-  kind="hist", 
-  hue="Industry",
-  multiple = "dodge"
-  )
-plt.title("Distribution of the number of investors per Industry")
-plt.tight_layout()
-plt.show()
-```
-
-```{python}
->>>>>>> 295fd0b15a78fb2a179c60b07417e052ab24fd20
 #| fig.height: 5
 #| fig.width: 8
 sns.displot(
