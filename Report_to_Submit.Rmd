@@ -59,27 +59,17 @@ unicorn_data_cleaned.info()
 ```
 
 ```{r}
+#| fig.width: 10
+#| fig.height: 6.4
+
 # Plotting the distribution of the number of companies per Industry
 ggplot(py$unicorn_data_cleaned, aes(x = Industry, color = Industry, fill = Industry)) +
   geom_bar(stat = "count") +
   labs(title = "Distribution of the number of companies per Industry")+
   theme(axis.text.x = element_text(angle = 45, hjust=1))
+
 ```
 
-```{python}
-sns.catplot(
-  data=unicorn_data_cleaned,
-  x="Industry",
-  kind="count", 
-  )
-plt.title("Distribution of the number of companies per Industry")
-plt.xticks(rotation=90)
-plt.show()
-```
-```{python}
-unicorn_data_cleaned.value_counts("Country")
-```
-```
 
 ```{r}
 ggplot(py$unicorn_data_cleaned, aes(x = Number_of_Investors, fill = Industry))+
@@ -100,3 +90,4 @@ py$unicorn_data_cleaned
 
 py$investors
 ```
+
