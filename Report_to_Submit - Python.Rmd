@@ -42,11 +42,21 @@ unicorn_data ["Select Investors"] = unicorn_data ["Select Investors"].str.replac
 # Counting the number of Investors
 unicorn_data["Number_of_Investors"] = unicorn_data["Select Investors"].str.split(",", expand=False).str.len()
 
+# Resolving an error where there were two "," for no reason 
 investors = unicorn_data["Select Investors"].str.split(",", expand=True)
 
+# Joining the main data frame with the separate Investors column
 unicorn_data_cleaned = unicorn_data.join(investors)
 
+# Remaning some columns
 unicorn_data_cleaned = unicorn_data_cleaned.rename(columns={0: "1st_investor", 1: "2nd_investor", 2: "3td_investor", 3: "4td_investor"})
+
+# Replacing City names in the Country variable
+unicorn_data_cleaned['Country'] = unicorn_data_cleaned['Country'].replace("London", "United Kingdom").replace("Munchen", "Germany")
+
+
+unicorn_data_cleaned["years_joined"] = (pd.Timestamp.today() - unicorn_data_cleaned["Date Joined"]) / np.timedelta64(1,'Y')
+
 
 unicorn_data_cleaned.info()
 
@@ -61,8 +71,10 @@ sns.countplot(
   data=unicorn_data_cleaned,
   x="Industry",
   stat='count',
-  ax=ax
+  ax=ax, 
+  order=unicorn_data_cleaned.value_counts("Industry").index
   ).set(title="Distribution of the number of companies per Industry")
+  
 plt.setp(ax.get_xticklabels(), rotation=45, ha="right",
          rotation_mode="anchor")
 plt.tight_layout()
@@ -73,20 +85,26 @@ plt.clf()
 
 
 ```{python}
+#| fig.width: 10
+#| fig.height: 6
 country_count = unicorn_data_cleaned.value_counts("Country")
 fig, ax = plt.subplots()
-sns.barplot(
-  x=country_count.index,
-  y=country_count.values, 
+
+sns.countplot(
+  data=unicorn_data_cleaned,
+  x="Country",
+  order=country_count.index,
+  stat="percent",
   ax=ax
-)
+).set(title="Distribution of the number of companies per Country")
+
 plt.setp(ax.get_xticklabels(), rotation=45, ha="right",
          rotation_mode="anchor")
          
 plt.tight_layout()
 plt.show()
-
 ```
+
 
 ```{python}
 #| fig.width: 10
@@ -98,11 +116,11 @@ sns.displot(
   kind="hist", 
   hue="Industry",
   multiple = "dodge"
-  )
-plt.title("Distribution of the number of investors per Industry")
+  ).set(title="Distribution of the number of investors per Industry")
 
 plt.tight_layout()
 plt.show()
+```
 
 ```{python}
 #| fig.height: 5
@@ -121,10 +139,17 @@ plt.show()
 ```{python}
 #| fig.height: 5
 #| fig.width: 8
-
-sns.catplot(
-  
-)
+sns.set_style("darkgrid")
+sns.displot(
+  data=unicorn_data_cleaned,
+  x="years_joined",
+  kind="kde",
+  rug=True,
+  fill=True, 
+  ).set(title="Distribution of the number of investors per Industry")
+plt.locator_params(axis="x", nbins=20)
+plt.tight_layout()
+plt.show()
 ```
 
 ```{r}
