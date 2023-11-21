@@ -86,7 +86,6 @@ plt.setp(ax.get_xticklabels(), rotation=45, ha="right",
          
 plt.tight_layout()
 plt.show()
-
 ```
 
 ```{python}
