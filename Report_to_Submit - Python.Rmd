@@ -73,7 +73,19 @@ plt.clf()
 
 
 ```{python}
-unicorn_data_cleaned.value_counts("Country")
+country_count = unicorn_data_cleaned.value_counts("Country")
+fig, ax = plt.subplots()
+
+sns.barplot(
+  x=country_count.index,
+  y=country_count.values, 
+  ax=ax
+)
+plt.setp(ax.get_xticklabels(), rotation=45, ha="right",
+         rotation_mode="anchor")
+         
+plt.tight_layout()
+plt.show()
 ```
 
 ```{python}
