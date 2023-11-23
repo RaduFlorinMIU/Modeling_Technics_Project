@@ -189,6 +189,45 @@ temp = unicorn_data_cleaned.sort_values("Valuation ($B)", ascending=False)
 ```
 
 
+```{python}
+#| fig.height: 5
+#| fig.width: 8
+
+sns.boxplot(
+  data=unicorn_data_cleaned,
+  x="Industry",
+  y="Valuation ($B)"
+).set(title="Boxplot of the valuation per industry")
+plt.xticks(rotation=45, ha="right")
+plt.tight_layout()
+plt.show()
+plt.clf()
+```
+
+```{python}
+#| fig.height: 10
+#| fig.width: 8
+
+sns.displot(
+  data=unicorn_data_cleaned,
+  x="Valuation ($B)", 
+  kind="kde",
+  rug=True, 
+  hue="Industry"
+  ).set(title="Boxplot of the valuation per industry")
+plt.tight_layout()
+plt.show()
+plt.clf()
+
+```
+
+```{python}
+unicorn_data_cleaned["Valuation_log"] =np.log(unicorn_data_cleaned["Valuation ($B)"])
+
+temp = unicorn_data_cleaned.sort_values("Valuation ($B)", ascending=False)
+```
+
+
 ```{r}
 py$unicorn_data_cleaned
 
