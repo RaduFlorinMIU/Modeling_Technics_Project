@@ -181,16 +181,24 @@ plt.tight_layout()
 plt.show()
 plt.clf()
 ```
+```{r}
+valuation_scale_temp = scale(py$unicorn_data_cleaned["Valuation ($B)"])
+```
+
 
 ```{python}
+# Trying to scale / log the valuation to see if we can get reduce the distance with the outliers
+
 unicorn_data_cleaned["Valuation_log"] =np.log(unicorn_data_cleaned["Valuation ($B)"])
+
+unicorn_data_cleaned["Valuation_scale"] = r.valuation_scale_temp
 
 temp = unicorn_data_cleaned.sort_values("Valuation ($B)", ascending=False)
 ```
 
 
 ```{python}
-#| fig.height: 5
+#| fig.height: 6
 #| fig.width: 8
 
 sns.boxplot(
@@ -204,8 +212,11 @@ plt.show()
 plt.clf()
 ```
 
+
+I'm not sure about this plot. 
+
 ```{python}
-#| fig.height: 10
+#| fig.height: 7
 #| fig.width: 8
 
 sns.displot(
@@ -218,13 +229,31 @@ sns.displot(
 plt.tight_layout()
 plt.show()
 plt.clf()
-
 ```
 
 ```{python}
-unicorn_data_cleaned["Valuation_log"] =np.log(unicorn_data_cleaned["Valuation ($B)"])
+#| fig.height: 7
+#| fig.width: 10.5
 
-temp = unicorn_data_cleaned.sort_values("Valuation ($B)", ascending=False)
+sns.barplot(
+  data=unicorn_data_cleaned, 
+  x="Industry", 
+  y="Valuation ($B)"
+).set(title="Average of the valuation per industry with confidence interval(95%)")
+plt.xticks(rotation=45, ha="right")
+plt.tight_layout()
+plt.show()
+plt.clf()
+```
+
+```{python}
+
+# Mean, standard deviation, media of valuation per industry. 
+unicorn_data_cleaned.groupby("Industry").agg(
+  mean_valuation=("Valuation ($B)", "mean"), 
+  std_valuation=("Valuation ($B)", "std"),
+  median_valuation=("Valuation ($B)", "median")
+).sort_values("std_valuation", ascending=False)
 ```
 
 
