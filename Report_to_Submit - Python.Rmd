@@ -94,7 +94,9 @@ sns.countplot(
   data=unicorn_data_cleaned,
   x="Country",
   order=country_count.index,
+
   stat="count",
+
   ax=ax
 ).set(title="Distribution of the number of companies per Country")
 
@@ -151,6 +153,7 @@ plt.locator_params(axis="x", nbins=20)
 plt.tight_layout()
 plt.show()
 ```
+
 ```{python}
 #| fig.height: 5
 #| fig.width: 8
@@ -180,6 +183,7 @@ sns.displot(
 plt.tight_layout()
 plt.show()
 plt.clf()
+
 ```
 
 ```{python}
