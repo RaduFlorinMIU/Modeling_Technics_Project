@@ -1,0 +1,271 @@
+---
+title: "Modeling_Project"
+author: "Miu Radu, ANY Gohou, SINGH Shalini, PHUNG Ngoc Uyen"
+date: "2023-11-11"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Import lybraries for R and Python
+
+```{r}
+library(readxl)
+library(reticulate)
+```
+
+```{python}
+import numpy as np 
+import pandas as pd
+import matplotlib.pyplot as plt 
+import seaborn as sns
+```
+
+```{python}
+# Load the Data Frame
+unicorn_data = pd.read_excel('../DataSets/CB-Insights_Global-Unicorn-Club_2023.xlsx')
+```
+
+```{python}
+# Cleaning the data
+## Removing useless columns
+unicorn_data = unicorn_data.dropna(subset="Valuation ($B)")
+
+## Dealing with missing value in "Country"
+unicorn_data.loc[537, "Country"] = "Singapour"
+
+## Removing ",," in "Select investors" corectly count  number of investors
+unicorn_data ["Select Investors"] = unicorn_data ["Select Investors"].str.replace(",,",",")
+
+# Counting the number of Investors
+unicorn_data["Number_of_Investors"] = unicorn_data["Select Investors"].str.split(",", expand=False).str.len()
+
+# Resolving an error where there were two "," for no reason 
+investors = unicorn_data["Select Investors"].str.split(",", expand=True)
+
+# Joining the main data frame with the separate Investors column
+unicorn_data_cleaned = unicorn_data.join(investors)
+
+# Remaning some columns
+unicorn_data_cleaned = unicorn_data_cleaned.rename(columns={0: "1st_investor", 1: "2nd_investor", 2: "3td_investor", 3: "4td_investor"})
+
+# Replacing City names in the Country variable
+unicorn_data_cleaned['Country'] = unicorn_data_cleaned['Country'].replace("London", "United Kingdom").replace("Munchen", "Germany")
+
+
+unicorn_data_cleaned["years_joined"] = (pd.Timestamp.today() - unicorn_data_cleaned["Date Joined"]) / np.timedelta64(1,'Y')
+
+
+unicorn_data_cleaned.info()
+
+```
+
+```{python}
+#| fig.width: 6.4
+#| fig.height: 6.4
+fig, ax = plt.subplots()
+
+sns.countplot(
+  data=unicorn_data_cleaned,
+  x="Industry",
+  stat='count',
+  ax=ax, 
+  order=unicorn_data_cleaned.value_counts("Industry").index
+  ).set(title="Distribution of the number of companies per Industry")
+  
+plt.setp(ax.get_xticklabels(), rotation=45, ha="right",
+         rotation_mode="anchor")
+plt.tight_layout()
+plt.show()
+plt.clf()
+```
+
+
+
+```{python}
+#| fig.width: 10
+#| fig.height: 6
+country_count = unicorn_data_cleaned.value_counts("Country")
+fig, ax = plt.subplots()
+
+sns.countplot(
+  data=unicorn_data_cleaned,
+  x="Country",
+  order=country_count.index,
+  stat="count",
+  ax=ax
+).set(title="Distribution of the number of companies per Country")
+
+plt.setp(ax.get_xticklabels(), rotation=45, ha="right",
+         rotation_mode="anchor")
+         
+plt.tight_layout()
+plt.show()
+```
+
+
+```{python}
+#| fig.width: 10
+#| fig.height: 6
+
+sns.displot(
+  data=unicorn_data_cleaned,
+  x="Number_of_Investors",
+  kind="hist", 
+  hue="Industry",
+  multiple = "dodge"
+  ).set(title="Distribution of the number of investors per Industry")
+
+plt.tight_layout()
+plt.show()
+```
+
+```{python}
+#| fig.height: 5
+#| fig.width: 8
+sns.displot(
+  data=unicorn_data_cleaned,
+  x="Number_of_Investors",
+  kind="kde",
+  fill=True
+  )
+plt.title("Distribution of the number of investors")
+plt.tight_layout()
+plt.show()
+```
+
+```{python}
+#| fig.height: 5
+#| fig.width: 8
+sns.set_style("darkgrid")
+sns.displot(
+  data=unicorn_data_cleaned,
+  x="years_joined",
+  kind="kde",
+  rug=True,
+  fill=True, 
+  ).set(title="Distribution of the number of investors per Industry")
+plt.locator_params(axis="x", nbins=20)
+plt.tight_layout()
+plt.show()
+```
+```{python}
+#| fig.height: 5
+#| fig.width: 8
+
+sns.boxplot(
+  data=unicorn_data_cleaned,
+  x="Industry",
+  y="Valuation ($B)"
+).set(title="Boxplot of the valuation per industry")
+plt.xticks(rotation=45, ha="right")
+plt.tight_layout()
+plt.show()
+plt.clf()
+```
+
+```{python}
+#| fig.height: 10
+#| fig.width: 8
+
+sns.displot(
+  data=unicorn_data_cleaned,
+  x="Valuation ($B)", 
+  kind="kde",
+  rug=True, 
+  hue="Industry"
+  ).set(title="Boxplot of the valuation per industry")
+plt.tight_layout()
+plt.show()
+plt.clf()
+```
+```{r}
+valuation_scale_temp = scale(py$unicorn_data_cleaned["Valuation ($B)"])
+```
+
+
+```{python}
+# Trying to scale / log the valuation to see if we can get reduce the distance with the outliers
+
+unicorn_data_cleaned["Valuation_log"] =np.log(unicorn_data_cleaned["Valuation ($B)"])
+
+unicorn_data_cleaned["Valuation_scale"] = r.valuation_scale_temp
+
+temp = unicorn_data_cleaned.sort_values("Valuation ($B)", ascending=False)
+```
+
+
+```{python}
+#| fig.height: 6
+#| fig.width: 8
+
+sns.boxplot(
+  data=unicorn_data_cleaned,
+  x="Industry",
+  y="Valuation ($B)"
+).set(title="Boxplot of the valuation per industry")
+plt.xticks(rotation=45, ha="right")
+plt.tight_layout()
+plt.show()
+plt.clf()
+```
+
+
+I'm not sure about this plot. 
+
+```{python}
+#| fig.height: 7
+#| fig.width: 8
+
+sns.displot(
+  data=unicorn_data_cleaned,
+  x="Valuation ($B)", 
+  kind="kde",
+  rug=True, 
+  hue="Industry"
+  ).set(title="Boxplot of the valuation per industry")
+plt.tight_layout()
+plt.show()
+plt.clf()
+```
+
+```{python}
+#| fig.height: 7
+#| fig.width: 10.5
+
+sns.barplot(
+  data=unicorn_data_cleaned, 
+  x="Industry", 
+  y="Valuation ($B)"
+).set(title="Average of the valuation per industry with confidence interval(95%)")
+plt.xticks(rotation=45, ha="right")
+plt.tight_layout()
+plt.show()
+plt.clf()
+```
+
+```{python}
+# Mean, standard deviation, media of valuation per industry. 
+unicorn_data_cleaned.groupby("Industry").agg(
+  mean_valuation=("Valuation ($B)", "mean"), 
+  std_valuation=("Valuation ($B)", "std"),
+  median_valuation=("Valuation ($B)", "median")
+).sort_values("std_valuation", ascending=False)
+```
+```{python}
+#| fig.height: 12
+#| fig.width: 12
+sns.pairplot(unicorn_data_cleaned)
+plt.tight_layout()
+plt.show()
+```
+
+
+```{r}
+py$unicorn_data_cleaned
+py$investors
+py$temp
+```
+
