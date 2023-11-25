@@ -13,6 +13,7 @@ Import lybraries for R and Python
 
 ```{r}
 library(readxl)
+library(countrycode)
 library(reticulate)
 ```
 
@@ -28,15 +29,23 @@ import seaborn as sns
 unicorn_data = pd.read_excel('../DataSets/CB-Insights_Global-Unicorn-Club_2023.xlsx')
 ```
 
+```{r}
+py$unicorn_data$Continent = countrycode(sourcevar = py$unicorn_data$Country,
+                            origin = "country.name",
+                            destination = "continent")
+```
+
+
 ```{python, warning=False}
-# Cleaning the data
-## Removing useless columns
+## Cleaning the data
+
+# Removing useless columns
 unicorn_data = unicorn_data.dropna(subset="Valuation ($B)")
 
-## Dealing with missing value in "Country"
+# Dealing with missing value in "Country"
 unicorn_data.loc[537, "Country"] = "Singapour"
 
-## Removing ",," in "Select investors" corectly count  number of investors
+# Removing ",," in "Select investors" corectly count  number of investors
 unicorn_data ["Select Investors"] = unicorn_data ["Select Investors"].str.replace(",,",",")
 
 # Counting the number of Investors
@@ -54,12 +63,14 @@ unicorn_data_cleaned = unicorn_data_cleaned.rename(columns={0: "1st_investor", 1
 # Replacing City names in the Country variable
 unicorn_data_cleaned['Country'] = unicorn_data_cleaned['Country'].replace("London", "United Kingdom").replace("Munchen", "Germany")
 
-
+# Years since Joined
 unicorn_data_cleaned["years_joined"] = (pd.Timestamp.today() - unicorn_data_cleaned["Date Joined"]) / np.timedelta64(1,'Y')
 
+unicorn_data_cleaned["Target"] = unicorn_data_cleaned["Valuation ($B)"].apply(lambda x: "Over 5 $B" if x > 5 else "Under 5 $B" )
+
+#unicorn_data_cleaned.to_csv("unicorn_data_cleaned.csv")
 
 unicorn_data_cleaned.info()
-
 ```
 
 ```{python}
@@ -224,19 +235,54 @@ unicorn_data_cleaned.groupby("Industry").agg(
   median_valuation=("Valuation ($B)", "median")
 ).sort_values("std_valuation", ascending=False)
 ```
+
 ```{python}
-#| fig.height: 12
-#| fig.width: 12
-sns.pairplot(unicorn_data_cleaned)
+#| fig.height: 7
+#| fig.width: 10.5
+
+sns.boxplot(
+  data=unicorn_data_cleaned,
+  y="years_joined"
+).set(title="Boxplot of the valuation per industry")
+plt.xticks(rotation=45, ha="right")
 plt.tight_layout()
 plt.show()
+plt.clf()
 ```
 
 ```{python}
 #| fig.height: 7
 #| fig.width: 10.5
-sns.
 
+sns.displot(
+  data=unicorn_data_cleaned,
+  x="years_joined", 
+  kind="kde", 
+  fill=True
+).set(title="Boxplot of the valuation per industry")
+plt.xticks(rotation=45, ha="right")
+plt.tight_layout()
+plt.show()
+plt.clf()
+```
+
+```{python}
+# Plots to see the distribution
+#| fig.width: 6.4
+#| fig.height: 6.4
+fig, ax = plt.subplots()
+
+sns.countplot(
+  data=unicorn_data_cleaned,
+  x="Industry",
+  order=unicorn_data_cleaned.value_counts("Industry").index, 
+  hue="Target" 
+  ).set(title="Distribution of the number of companies per Industry")
+  
+plt.xticks(rotation=45, ha="right")
+plt.tight_layout()
+plt.show()
+plt.clf()
 ```
 
 
