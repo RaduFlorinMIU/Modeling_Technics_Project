@@ -28,7 +28,7 @@ import seaborn as sns
 unicorn_data = pd.read_excel('../DataSets/CB-Insights_Global-Unicorn-Club_2023.xlsx')
 ```
 
-```{python}
+```{python, warning=False}
 # Cleaning the data
 ## Removing useless columns
 unicorn_data = unicorn_data.dropna(subset="Valuation ($B)")
@@ -117,7 +117,6 @@ sns.displot(
   hue="Industry",
   multiple = "dodge"
   ).set(title="Distribution of the number of investors per Industry")
-
 plt.tight_layout()
 plt.show()
 ```
@@ -166,6 +165,8 @@ plt.show()
 plt.clf()
 ```
 
+I'm not sure about this plot. 
+
 ```{python}
 #| fig.height: 10
 #| fig.width: 8
@@ -200,42 +201,6 @@ temp = unicorn_data_cleaned.sort_values("Valuation ($B)", ascending=False)
 
 
 ```{python}
-#| fig.height: 6
-#| fig.width: 8
-
-sns.boxplot(
-  data=unicorn_data_cleaned,
-  x="Industry",
-  y="Valuation ($B)"
-).set(title="Boxplot of the valuation per industry")
-plt.xticks(rotation=45, ha="right")
-plt.tight_layout()
-plt.show()
-plt.clf()
-```
-
-
-I'm not sure about this plot. 
-
-```{python}
-#| fig.height: 7
-#| fig.width: 8
-
-sns.displot(
-  data=unicorn_data_cleaned,
-  x="Valuation ($B)", 
-  kind="kde",
-  rug=True, 
-  hue="Industry"
-  ).set(title="Boxplot of the valuation per industry")
-plt.tight_layout()
-plt.show()
-plt.clf()
-
-```
-
-
-```{python}
 #| fig.height: 7
 #| fig.width: 10.5
 
@@ -252,65 +217,6 @@ plt.clf()
 
 ```{python}
 
-# Mean, standard deviation, media of valuation per industry. 
-unicorn_data_cleaned.groupby("Industry").agg(
-  mean_valuation=("Valuation ($B)", "mean"), 
-  std_valuation=("Valuation ($B)", "std"),
-  median_valuation=("Valuation ($B)", "median")
-).sort_values("std_valuation", ascending=False)
-```
-
-
-```{python}
-#| fig.height: 6
-#| fig.width: 8
-
-sns.boxplot(
-  data=unicorn_data_cleaned,
-  x="Industry",
-  y="Valuation ($B)"
-).set(title="Boxplot of the valuation per industry")
-plt.xticks(rotation=45, ha="right")
-plt.tight_layout()
-plt.show()
-plt.clf()
-```
-
-
-I'm not sure about this plot. 
-
-```{python}
-#| fig.height: 7
-#| fig.width: 8
-
-sns.displot(
-  data=unicorn_data_cleaned,
-  x="Valuation ($B)", 
-  kind="kde",
-  rug=True, 
-  hue="Industry"
-  ).set(title="Boxplot of the valuation per industry")
-plt.tight_layout()
-plt.show()
-plt.clf()
-```
-
-```{python}
-#| fig.height: 7
-#| fig.width: 10.5
-
-sns.barplot(
-  data=unicorn_data_cleaned, 
-  x="Industry", 
-  y="Valuation ($B)"
-).set(title="Average of the valuation per industry with confidence interval(95%)")
-plt.xticks(rotation=45, ha="right")
-plt.tight_layout()
-plt.show()
-plt.clf()
-```
-
-```{python}
 # Mean, standard deviation, media of valuation per industry. 
 unicorn_data_cleaned.groupby("Industry").agg(
   mean_valuation=("Valuation ($B)", "mean"), 
@@ -324,6 +230,13 @@ unicorn_data_cleaned.groupby("Industry").agg(
 sns.pairplot(unicorn_data_cleaned)
 plt.tight_layout()
 plt.show()
+```
+
+```{python}
+#| fig.height: 7
+#| fig.width: 10.5
+sns.
+
 ```
 
 
