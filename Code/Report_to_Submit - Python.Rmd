@@ -188,38 +188,6 @@ plt.locator_params(axis="x", nbins=20)
 plt.tight_layout()
 plt.show()
 ```
-```{python}
-#| fig.height: 5
-#| fig.width: 8
-
-sns.boxplot(
-  data=unicorn_data_cleaned,
-  x="Industry",
-  y="Valuation ($B)"
-).set(title="Boxplot of the valuation per industry")
-plt.xticks(rotation=45, ha="right")
-plt.tight_layout()
-plt.show()
-plt.clf()
-```
-
-I'm not sure about this plot. 
-
-```{python}
-#| fig.height: 10
-#| fig.width: 8
-
-sns.displot(
-  data=unicorn_data_cleaned,
-  x="Valuation ($B)", 
-  kind="kde",
-  rug=True, 
-  hue="Industry"
-  ).set(title="Boxplot of the valuation per industry")
-plt.tight_layout()
-plt.show()
-plt.clf()
-```
 
 
 ```{r}
@@ -235,22 +203,6 @@ unicorn_data_cleaned["Valuation_log"] =np.log(unicorn_data_cleaned["Valuation ($
 unicorn_data_cleaned["Valuation_scale"] = r.valuation_scale_temp
 
 temp = unicorn_data_cleaned.sort_values("Valuation ($B)", ascending=False)
-```
-
-
-```{python}
-#| fig.height: 7
-#| fig.width: 10.5
-
-sns.barplot(
-  data=unicorn_data_cleaned, 
-  x="Industry", 
-  y="Valuation ($B)"
-).set(title="Average of the valuation per industry with confidence interval(95%)")
-plt.xticks(rotation=45, ha="right")
-plt.tight_layout()
-plt.show()
-plt.clf()
 ```
 
 ```{python}
