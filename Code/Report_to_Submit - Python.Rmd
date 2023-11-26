@@ -29,14 +29,17 @@ import seaborn as sns
 unicorn_data = pd.read_excel('../DataSets/CB-Insights_Global-Unicorn-Club_2023.xlsx')
 ```
 
-```{r}
+```{r, warning=False}
 py$unicorn_data$Continent = countrycode(sourcevar = py$unicorn_data$Country,
                             origin = "country.name",
                             destination = "continent")
 ```
 
 
-```{python, warning=False}
+```{python, }
+#| warning=False
+
+
 ## Cleaning the data
 
 # Removing useless columns
@@ -58,7 +61,7 @@ investors = unicorn_data["Select Investors"].str.split(",", expand=True)
 unicorn_data_cleaned = unicorn_data.join(investors)
 
 # Remaning some columns
-unicorn_data_cleaned = unicorn_data_cleaned.rename(columns={0: "1st_investor", 1: "2nd_investor", 2: "3td_investor", 3: "4td_investor"})
+unicorn_data_cleaned = unicorn_data_cleaned.rename(columns={0: "1st_investor", 1: "2nd_investor", 2: "3th_investor", 3: "4th_investor"})
 
 # Replacing City names in the Country variable
 unicorn_data_cleaned['Country'] = unicorn_data_cleaned['Country'].replace("London", "United Kingdom").replace("Munchen", "Germany")
@@ -68,10 +71,18 @@ unicorn_data_cleaned["years_joined"] = (pd.Timestamp.today() - unicorn_data_clea
 
 unicorn_data_cleaned["Target"] = unicorn_data_cleaned["Valuation ($B)"].apply(lambda x: "Over 5 $B" if x > 5 else "Under 5 $B" )
 
-#unicorn_data_cleaned.to_csv("unicorn_data_cleaned.csv")
+#unicorn_data_cleaned.to_csv("../DataSets/unicorn_data_cleaned.csv")
 
 unicorn_data_cleaned.info()
 ```
+
+```{python}
+temp = unicorn_data_cleaned[["1st_investor", "2nd_investor", "3th_investor", "4th_investor"]].apply(pd.value_counts).sum(axis=1).to_frame()
+investors = temp.sort_values(by=0, ascending=False)
+investors
+
+```
+
 
 ```{python}
 #| fig.width: 6.4
@@ -115,6 +126,22 @@ plt.setp(ax.get_xticklabels(), rotation=45, ha="right",
 plt.tight_layout()
 plt.show()
 ```
+
+```{python}
+#| fig.width: 10
+#| fig.height: 6
+continent_count = unicorn_data_cleaned.value_counts("Continent")
+
+sns.countplot(
+  data=unicorn_data_cleaned,
+  x="Continent",
+  order=continent_count.index,
+).set(title="Distribution of the number of companies per Country")
+plt.xticks(rotation=45, ha="right")
+plt.tight_layout()
+plt.show()
+```
+
 
 
 ```{python}
