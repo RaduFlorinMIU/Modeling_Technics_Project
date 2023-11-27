@@ -245,8 +245,9 @@ plt.show()
 plt.clf()
 ```
 
+Plots to see the distribution
+
 ```{python}
-# Plots to see the distribution
 #| fig.width: 6.4
 #| fig.height: 6.4
 fig, ax = plt.subplots()
@@ -264,6 +265,24 @@ plt.show()
 plt.clf()
 ```
 
+```{python}
+# Plots to see the distribution
+#| fig.width: 10
+#| fig.height: 7
+fig, ax = plt.subplots()
+
+sns.countplot(
+  data=unicorn_data_cleaned,
+  x="Continent",
+  order=unicorn_data_cleaned.value_counts("Continent").index, 
+  hue="Target" 
+  ).set(title="Distribution of the number of companies per Industry")
+  
+plt.xticks(rotation=45, ha="right")
+plt.tight_layout()
+plt.show()
+plt.clf()
+```
 
 ```{r}
 py$unicorn_data_cleaned
