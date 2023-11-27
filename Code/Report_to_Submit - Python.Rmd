@@ -29,14 +29,17 @@ import seaborn as sns
 unicorn_data = pd.read_excel('../DataSets/CB-Insights_Global-Unicorn-Club_2023.xlsx')
 ```
 
-```{r}
+```{r, warning=False}
 py$unicorn_data$Continent = countrycode(sourcevar = py$unicorn_data$Country,
                             origin = "country.name",
                             destination = "continent")
 ```
 
 
-```{python, warning=False}
+```{python, }
+#| warning=False
+
+
 ## Cleaning the data
 
 # Removing useless columns
@@ -51,14 +54,11 @@ unicorn_data ["Select Investors"] = unicorn_data ["Select Investors"].str.replac
 # Counting the number of Investors
 unicorn_data["Number_of_Investors"] = unicorn_data["Select Investors"].str.split(",", expand=False).str.len()
 
-# Resolving an error where there were two "," for no reason 
+# delete this code 
 investors = unicorn_data["Select Investors"].str.split(",", expand=True)
 
-# Joining the main data frame with the separate Investors column
-unicorn_data_cleaned = unicorn_data.join(investors)
-
-# Remaning some columns
-unicorn_data_cleaned = unicorn_data_cleaned.rename(columns={0: "1st_investor", 1: "2nd_investor", 2: "3td_investor", 3: "4td_investor"})
+#unicorn_data_cleaned = unicorn_data.join(investors)
+#unicorn_data_cleaned = unicorn_data_cleaned.rename(columns={0: "1st_investor", 1: "2nd_investor", 2: "3th_investor", 3: "4th_investor"})
 
 # Replacing City names in the Country variable
 unicorn_data_cleaned['Country'] = unicorn_data_cleaned['Country'].replace("London", "United Kingdom").replace("Munchen", "Germany")
@@ -68,10 +68,18 @@ unicorn_data_cleaned["years_joined"] = (pd.Timestamp.today() - unicorn_data_clea
 
 unicorn_data_cleaned["Target"] = unicorn_data_cleaned["Valuation ($B)"].apply(lambda x: "Over 5 $B" if x > 5 else "Under 5 $B" )
 
-#unicorn_data_cleaned.to_csv("unicorn_data_cleaned.csv")
+#unicorn_data_cleaned.to_csv("../DataSets/unicorn_data_cleaned.csv")
 
 unicorn_data_cleaned.info()
 ```
+
+```{python}
+temp = unicorn_data_cleaned[["1st_investor", "2nd_investor", "3th_investor", "4th_investor"]].apply(pd.value_counts).sum(axis=1).to_frame()
+investors = temp.sort_values(by=0, ascending=False)
+investors
+
+```
+
 
 ```{python}
 #| fig.width: 6.4
@@ -115,6 +123,22 @@ plt.setp(ax.get_xticklabels(), rotation=45, ha="right",
 plt.tight_layout()
 plt.show()
 ```
+
+```{python}
+#| fig.width: 10
+#| fig.height: 6
+continent_count = unicorn_data_cleaned.value_counts("Continent")
+
+sns.countplot(
+  data=unicorn_data_cleaned,
+  x="Continent",
+  order=continent_count.index,
+).set(title="Distribution of the number of companies per Country")
+plt.xticks(rotation=45, ha="right")
+plt.tight_layout()
+plt.show()
+```
+
 
 
 ```{python}
@@ -161,38 +185,6 @@ plt.locator_params(axis="x", nbins=20)
 plt.tight_layout()
 plt.show()
 ```
-```{python}
-#| fig.height: 5
-#| fig.width: 8
-
-sns.boxplot(
-  data=unicorn_data_cleaned,
-  x="Industry",
-  y="Valuation ($B)"
-).set(title="Boxplot of the valuation per industry")
-plt.xticks(rotation=45, ha="right")
-plt.tight_layout()
-plt.show()
-plt.clf()
-```
-
-I'm not sure about this plot. 
-
-```{python}
-#| fig.height: 10
-#| fig.width: 8
-
-sns.displot(
-  data=unicorn_data_cleaned,
-  x="Valuation ($B)", 
-  kind="kde",
-  rug=True, 
-  hue="Industry"
-  ).set(title="Boxplot of the valuation per industry")
-plt.tight_layout()
-plt.show()
-plt.clf()
-```
 
 
 ```{r}
@@ -208,22 +200,6 @@ unicorn_data_cleaned["Valuation_log"] =np.log(unicorn_data_cleaned["Valuation ($
 unicorn_data_cleaned["Valuation_scale"] = r.valuation_scale_temp
 
 temp = unicorn_data_cleaned.sort_values("Valuation ($B)", ascending=False)
-```
-
-
-```{python}
-#| fig.height: 7
-#| fig.width: 10.5
-
-sns.barplot(
-  data=unicorn_data_cleaned, 
-  x="Industry", 
-  y="Valuation ($B)"
-).set(title="Average of the valuation per industry with confidence interval(95%)")
-plt.xticks(rotation=45, ha="right")
-plt.tight_layout()
-plt.show()
-plt.clf()
 ```
 
 ```{python}
@@ -266,8 +242,9 @@ plt.show()
 plt.clf()
 ```
 
+Plots to see the distribution
+
 ```{python}
-# Plots to see the distribution
 #| fig.width: 6.4
 #| fig.height: 6.4
 fig, ax = plt.subplots()
@@ -285,6 +262,24 @@ plt.show()
 plt.clf()
 ```
 
+```{python}
+# Plots to see the distribution
+#| fig.width: 10
+#| fig.height: 7
+fig, ax = plt.subplots()
+
+sns.countplot(
+  data=unicorn_data_cleaned,
+  x="Continent",
+  order=unicorn_data_cleaned.value_counts("Continent").index, 
+  hue="Target" 
+  ).set(title="Distribution of the number of companies per Industry")
+  
+plt.xticks(rotation=45, ha="right")
+plt.tight_layout()
+plt.show()
+plt.clf()
+```
 
 ```{r}
 py$unicorn_data_cleaned
