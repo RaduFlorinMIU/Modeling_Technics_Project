@@ -54,14 +54,11 @@ unicorn_data ["Select Investors"] = unicorn_data ["Select Investors"].str.replac
 # Counting the number of Investors
 unicorn_data["Number_of_Investors"] = unicorn_data["Select Investors"].str.split(",", expand=False).str.len()
 
-# Resolving an error where there were two "," for no reason 
+# delete this code 
 investors = unicorn_data["Select Investors"].str.split(",", expand=True)
 
-# Joining the main data frame with the separate Investors column
-unicorn_data_cleaned = unicorn_data.join(investors)
-
-# Remaning some columns
-unicorn_data_cleaned = unicorn_data_cleaned.rename(columns={0: "1st_investor", 1: "2nd_investor", 2: "3th_investor", 3: "4th_investor"})
+#unicorn_data_cleaned = unicorn_data.join(investors)
+#unicorn_data_cleaned = unicorn_data_cleaned.rename(columns={0: "1st_investor", 1: "2nd_investor", 2: "3th_investor", 3: "4th_investor"})
 
 # Replacing City names in the Country variable
 unicorn_data_cleaned['Country'] = unicorn_data_cleaned['Country'].replace("London", "United Kingdom").replace("Munchen", "Germany")
