@@ -127,3 +127,35 @@ ggplot(unicorn_data, aes(x = Number_of_Investors, fill = Industry)) +
   labs(title = "Distribution of the number of companies per Country")+
   scale_fill_paletteer_d("awtools::a_palette")
 ```
+
+```{r pressure, echo=FALSE}
+table1 <- table(unicorn_data$Country, unicorn_data$target)
+chiSqResult <- chisq.test(table1)
+print(chiSqResult)
+
+
+table2 <- table(unicorn_data$Industry, unicorn_data$target)
+chiSqResult <- chisq.test(table2)
+print(chiSqResult)
+
+
+table3 <- table(unicorn_data$Continent, unicorn_data$target)
+chiSqResult <- chisq.test(table3)
+print(chiSqResult)
+
+
+table4 <- table(unicorn_data$Number_of_Investors, unicorn_data$target)
+chiSqResult <- chisq.test(table4)
+print(chiSqResult)
+
+
+table5 <- table(unicorn_data$Year_Joined, unicorn_data$target)
+chiSqResult <- chisq.test(table5)
+print(chiSqResult)
+
+
+table6 <- table(unicorn_data$Age, unicorn_data$target)
+chiSqResult <- chisq.test(table6)
+print(chiSqResult)
+
+```
