@@ -1,0 +1,152 @@
+---
+title: "Report_to_submit_R"
+author: "Ngoc Uyen PHUNG"
+date: "2023-11-27"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+
+# Load the package
+library(readxl)
+library(countrycode)
+library(reticulate)
+
+# Load the data
+unicorn_data <- read_excel("DataSets/CB-Insights_Global-Unicorn-Club_2023.xlsx")
+
+unicorn_data$Continent = countrycode(sourcevar = unicorn_data$Country,
+                            origin = "country.name",
+                            destination = "continent")
+```
+
+## Cleaning the data
+
+```{r}
+library(magrittr)
+library(dplyr)
+library(tidyr)
+# Removing useless columns
+unicorn_data %>% drop_na("Valuation ($B)")
+
+# Dealing with missing value in "Country"
+unicorn_data[538, "Country"] <- "Singapore"
+
+# Remove "City" column
+unicorn_data <- subset(unicorn_data, select = -City)
+
+# Removing ",," in "Select investors" correctly count  number of investors
+unicorn_data$'Select Investors' <- gsub(",,", ",", unicorn_data$`Select Investors`)
+
+# Counting the number of Investors
+unicorn_data$Number_of_Investors <- sapply(strsplit(as.character(unicorn_data$'Select Investors'), ","), length)
+
+# Replacing City names in the Country variable
+unicorn_data$Country <- gsub("London", "United Kingdom", unicorn_data$Country)
+unicorn_data$Country <- gsub("Munchen", "Germany", unicorn_data$Country)
+
+# Years since Joined
+unicorn_data$Age <- as.numeric(difftime(Sys.Date(), as.Date(unicorn_data$'Date Joined'), units = "days") / 365)
+unicorn_data$Age <- floor(unicorn_data$Age)
+
+# Add column year
+unicorn_data$Year_Joined <- format(as.Date(unicorn_data$'Date Joined', format = "%y-%m-%d"), "%Y")
+summary(unicorn_data)
+
+# Add the Target column
+unicorn_data <- unicorn_data %>%
+  mutate(target = ifelse(`Valuation ($B)` > 5, 1, 0))
+View(unicorn_data)
+
+```
+
+## Plot
+```{r pressure, echo=FALSE}
+library(ggplot2)
+
+plot <- ggplot(unicorn_data, aes(x = Industry)) +
+  geom_bar(stat = "count", fill = "steelblue", order = names(sort(table(unicorn_data$Industry), decreasing = TRUE))) +
+  labs(title = "Distribution of the number of companies per Industry") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+print(plot)
+```
+
+```{r pressure, echo-FALSE}
+# Per country
+Companies_per_country <- ggplot(unicorn_data, aes(x = Country)) +
+  geom_bar(stat = "count", fill = "steelblue", order = names(sort(table(unicorn_data$Country), decreasing = TRUE))) +
+  labs(title = "Distribution of the number of companies per Country") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+print(Companies_per_country)
+
+```
+
+```{r pressure, echo-FALSE}
+# Per continent
+Companies_per_continent <- ggplot(unicorn_data, aes(x = Continent)) +
+  geom_bar(stat = "count", fill = "steelblue", order = names(sort(table(unicorn_data$Continent), decreasing = TRUE))) +
+  labs(title = "Distribution of the number of companies per Continent") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+print(Companies_per_continent)
+```
+
+
+```{r pressure, echo-FALSE}
+# Investors_per_Industry <- ggplot(unicorn_data, aes(x = Number_of_Investors, fill = Industry)) +
+  #geom_histogram(position = "dodge", bins = 30, alpha = 0.7) +
+  #labs(title = "Distribution of the number of investors per Industry") +
+  #theme_minimal()
+
+#print(Investors_per_Industry)
+```
+
+```{r pressure, echo-FALSE}
+# This one could be analyzed more ##
+Number_of_Investors_plot <- ggplot(unicorn_data, aes(x = Number_of_Investors, fill = Industry)) +
+  geom_density(alpha = 0.5) +
+  labs(title = "Distribution of the number of investors") +
+  theme_minimal()
+
+print(Number_of_Investors_plot)
+```
+
+
+## Correlation test
+```{r pressure, echo=FALSE}
+table1 <- table(unicorn_data$Country, unicorn_data$target)
+chiSqResult <- chisq.test(table1)
+print(chiSqResult)
+
+
+table2 <- table(unicorn_data$Industry, unicorn_data$target)
+chiSqResult <- chisq.test(table2)
+print(chiSqResult)
+
+
+table3 <- table(unicorn_data$Continent, unicorn_data$target)
+chiSqResult <- chisq.test(table3)
+print(chiSqResult)
+
+
+table4 <- table(unicorn_data$Number_of_Investors, unicorn_data$target)
+chiSqResult <- chisq.test(table4)
+print(chiSqResult)
+
+
+table5 <- table(unicorn_data$Year_Joined, unicorn_data$target)
+chiSqResult <- chisq.test(table5)
+print(chiSqResult)
+
+
+table6 <- table(unicorn_data$Age, unicorn_data$target)
+chiSqResult <- chisq.test(table6)
+print(chiSqResult)
+
+```
+

@@ -1,0 +1,129 @@
+---
+title: "Report_to_submit_R"
+author: "Ngoc Uyen PHUNG"
+date: "2023-11-27"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, warning=FALSE}
+# Load the package
+library(readxl)
+
+library(data.table)
+library(countrycode)
+library(magrittr) # to use the pipe
+library(dplyr)
+library(tidyr)
+library(lubridate) # to manipulate dates
+
+# Visualization
+library(ggplot2)
+library(hrbrthemes) # different themes for ggplot2 
+library(paletteer)
+library(plotly) # to have dynamic plot
+```
+
+```{r}
+names_sort_count = function(data, decreasing=TRUE){
+  return(
+  data %>% 
+    table() %>% 
+    sort(decreasing = decreasing) %>% 
+    names()
+  )
+}
+
+
+```
+
+
+```{r}
+# Load the data
+unicorn_data <- read_excel("../DataSets/CB-Insights_Global-Unicorn-Club_2023.xlsx")
+
+```
+
+## Cleaning the data
+
+```{r pressure}
+# Removing useless columns
+unicorn_data = drop_na(unicorn_data, `Valuation ($B)`)
+
+# Dealing with missing value in "Country"
+unicorn_data[538, "Country"] <- "Singapore"
+
+# Remove "City" column
+unicorn_data <- subset(unicorn_data, select = -City)
+
+# Removing ",," in "Select investors" correctly count  number of investors
+unicorn_data$'Select Investors' <- gsub(",,", ",", unicorn_data$`Select Investors`)
+
+# Counting the number of Investors
+unicorn_data$Number_of_Investors <- sapply(strsplit(as.character(unicorn_data$'Select Investors'), ","), length)
+
+# Replacing City names in the Country variable
+unicorn_data$Country <- gsub("London", "United Kingdom", unicorn_data$Country)
+unicorn_data$Country <- gsub("Munchen", "Germany", unicorn_data$Country)
+
+# Continent Values
+unicorn_data$Continent = countrycode(sourcevar = unicorn_data$Country,
+                            origin = "country.name",
+                            destination = "continent")
+
+# Year Conversion 
+unicorn_data$`Date Joined` = ymd(unicorn_data$`Date Joined`)
+
+# Years since Joined
+unicorn_data$yeart_to_date  = interval(unicorn_data$`Date Joined`, now()) %/% years(1)
+
+# Add column year
+unicorn_data$Year_Joined <- year(unicorn_data$`Date Joined`)
+
+unicorn_data <- unicorn_data %>%
+  mutate(target = 
+           ifelse(`Valuation ($B)` >= 5, "Over 5 $B",  "Under 5 $B") %>% as.factor())
+
+unicorn_data %>% 
+  arrange(Industry, group_by = Industry)
+
+unicorn_data$Industry = factor(unicorn_data$Industry)
+
+unicorn_data$Continent = factor(unicorn_data$Continent)
+
+summary(unicorn_data)
+```
+
+```{r}
+
+ggplot(unicorn_data, aes(x = Industry)) +
+  geom_bar(stat = "count", fill = "steelblue") +
+  labs(title = "Distribution of the number of companies per Industry") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  xlim(names_sort_count(unicorn_data$Industry))
+
+```
+
+```{r}
+ggplot(unicorn_data, aes(x = Country)) +
+  geom_bar(stat = "count", fill = "steelblue") +
+  xlim(names_sort_count(unicorn_data$Country))+
+  labs(title = "Distribution of the number of companies per Country") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+```{r}
+ggplot(unicorn_data, aes(x = Continent)) +
+  geom_bar(stat = "count", fill = "steelblue") +
+  xlim(names_sort_count(unicorn_data$Continent))+
+  labs(title = "Distribution of the number of companies per Country") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+```{r}
+ggplot(unicorn_data, aes(x = Number_of_Investors, fill = Industry)) +
+  geom_bar(stat = "count", position = "dodge") +
+  labs(title = "Distribution of the number of companies per Country")+
+  scale_fill_paletteer_d("awtools::a_palette")
+```
