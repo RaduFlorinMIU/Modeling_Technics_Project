@@ -158,5 +158,7 @@ table6 <- table(unicorn_data$Age, unicorn_data$target)
 chiSqResult <- chisq.test(table6)
 print(chiSqResult)
 
+
 ```
+
 
