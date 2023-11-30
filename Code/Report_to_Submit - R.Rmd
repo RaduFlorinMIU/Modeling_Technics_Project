@@ -11,17 +11,13 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r, warning=FALSE}
 # Load the package
-library(readxl)
+library(tidyverse)
 
-library(data.table)
+library(readxl)
 library(countrycode)
 library(magrittr) # to use the pipe
-library(dplyr)
-library(tidyr)
-library(lubridate) # to manipulate dates
 
 # Visualization
-library(ggplot2)
 library(hrbrthemes) # different themes for ggplot2 
 library(paletteer)
 library(plotly) # to have dynamic plot
@@ -50,96 +46,126 @@ unicorn_data <- read_excel("../DataSets/CB-Insights_Global-Unicorn-Club_2023.xls
 ## Cleaning the data
 
 ```{r pressure}
-# Removing useless columns
-unicorn_data = drop_na(unicorn_data, `Valuation ($B)`)
+# Renaming Columns
+colnames(unicorn_data) <- c('company','valuation_billions','date_added','country','city','industry','select_investors')
 
-# Dealing with missing value in "Country"
-unicorn_data[538, "Country"] <- "Singapore"
+# Removing useless columns
+unicorn_data = drop_na(unicorn_data, valuation_billions)
+
+
+#Sequoia Capital firm name to avoid error when creating new df "unicorn_investors"
+unicorn_data$select_investors <- gsub("and Sequoia Capital China", "Sequoia Capital China", unicorn_data$select_investors)
+
+
+# Dealing with missing value in "country"
+unicorn_data[538, "country"] <- "Singapore"
 
 # Remove "City" column
-unicorn_data <- subset(unicorn_data, select = -City)
+unicorn_data <- subset(unicorn_data, select = -city)
 
 # Removing ",," in "Select investors" correctly count  number of investors
-unicorn_data$'Select Investors' <- gsub(",,", ",", unicorn_data$`Select Investors`)
+unicorn_data$select_investors <- gsub(",,", ",", unicorn_data$select_investors)
+
+# Removing all white spaces from "Select investors"
 
 # Counting the number of Investors
-unicorn_data$Number_of_Investors <- sapply(strsplit(as.character(unicorn_data$'Select Investors'), ","), length)
+unicorn_data$Number_of_Investors <- sapply(strsplit(as.character(unicorn_data$select_investors), ","), length)
 
-# Replacing City names in the Country variable
-unicorn_data$Country <- gsub("London", "United Kingdom", unicorn_data$Country)
-unicorn_data$Country <- gsub("Munchen", "Germany", unicorn_data$Country)
+# Replacing City names in the country variable
+unicorn_data$country <- gsub("London", "United Kingdom", unicorn_data$country)
+unicorn_data$country <- gsub("Munchen", "Germany", unicorn_data$country)
 
-# Continent Values
-unicorn_data$Continent = countrycode(sourcevar = unicorn_data$Country,
+# continent Values
+unicorn_data$continent = countrycode(sourcevar = unicorn_data$country,
                             origin = "country.name",
                             destination = "continent")
 
 # Year Conversion 
-unicorn_data$`Date Joined` = ymd(unicorn_data$`Date Joined`)
+unicorn_data$date_added = ymd(unicorn_data$date_added)
 
 # Years since Joined
-unicorn_data$yeart_to_date  = interval(unicorn_data$`Date Joined`, now()) %/% years(1)
+unicorn_data$age = interval(unicorn_data$date_added, now()) %/% years(1)
 
 # Add column year
-unicorn_data$Year_Joined <- year(unicorn_data$`Date Joined`)
+unicorn_data$year_added <- year(unicorn_data$date_added)
 
 unicorn_data <- unicorn_data %>%
   mutate(target = 
-           ifelse(`Valuation ($B)` >= 5, "Over 5 $B",  "Under 5 $B") %>% as.factor())
+           ifelse(valuation_billions >= 5, "Over 5 $B",  "Under 5 $B") %>% as.factor())
 
 unicorn_data %>% 
-  arrange(Industry, group_by = Industry)
+  arrange(industry, group_by = industry)
 
-unicorn_data$Industry = factor(unicorn_data$Industry)
+unicorn_data$industry = factor(unicorn_data$industry)
 
-unicorn_data$Continent = factor(unicorn_data$Continent)
+unicorn_data$continent = factor(unicorn_data$continent)
 
 summary(unicorn_data)
 ```
+## Transforming the Data
+
+```{r}
+investors <- unicorn_data %>%
+  mutate(select_investors = strsplit(select_investors, ",")) %>% 
+  unnest(select_investors) %>% 
+  mutate(select_investors = str_trim(select_investors))
+
+investors = investors %>% 
+  summarise(.by = select_investors,
+            investements=list(company)
+            )
+
+
+
+```
+
+
 
 ```{r}
 
-ggplot(unicorn_data, aes(x = Industry)) +
+ggplot(unicorn_data, aes(x = industry)) +
   geom_bar(stat = "count", fill = "steelblue") +
-  labs(title = "Distribution of the number of companies per Industry") +
+  labs(title = "Distribution of the number of companies per industry") +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-  xlim(names_sort_count(unicorn_data$Industry))
+  xlim(names_sort_count(unicorn_data$industry))
 
 ```
 
 ```{r}
-ggplot(unicorn_data, aes(x = Country)) +
+ggplot(unicorn_data, aes(x = country)) +
   geom_bar(stat = "count", fill = "steelblue") +
-  xlim(names_sort_count(unicorn_data$Country))+
-  labs(title = "Distribution of the number of companies per Country") +
+  xlim(names_sort_count(unicorn_data$country))+
+  labs(title = "Distribution of the number of companies per country") +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
+
 ```{r}
-ggplot(unicorn_data, aes(x = Continent)) +
+ggplot(unicorn_data, aes(x = continent)) +
   geom_bar(stat = "count", fill = "steelblue") +
-  xlim(names_sort_count(unicorn_data$Continent))+
-  labs(title = "Distribution of the number of companies per Country") +
+  xlim(names_sort_count(unicorn_data$continent))+
+  labs(title = "Distribution of the number of companies per country") +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
+
 ```{r}
-ggplot(unicorn_data, aes(x = Number_of_Investors, fill = Industry)) +
+ggplot(unicorn_data, aes(x = Number_of_Investors, fill = industry)) +
   geom_bar(stat = "count", position = "dodge") +
-  labs(title = "Distribution of the number of companies per Country")+
+  labs(title = "Distribution of the number of investors")+
   scale_fill_paletteer_d("awtools::a_palette")
 ```
 
 ```{r pressure, echo=FALSE}
-table1 <- table(unicorn_data$Country, unicorn_data$target)
+table1 <- table(unicorn_data$country, unicorn_data$target)
 chiSqResult <- chisq.test(table1)
 print(chiSqResult)
 
 
-table2 <- table(unicorn_data$Industry, unicorn_data$target)
+table2 <- table(unicorn_data$industry, unicorn_data$target)
 chiSqResult <- chisq.test(table2)
 print(chiSqResult)
 
 
-table3 <- table(unicorn_data$Continent, unicorn_data$target)
+table3 <- table(unicorn_data$continent, unicorn_data$target)
 chiSqResult <- chisq.test(table3)
 print(chiSqResult)
 
