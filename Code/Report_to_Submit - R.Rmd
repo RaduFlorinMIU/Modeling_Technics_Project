@@ -159,3 +159,4 @@ chiSqResult <- chisq.test(table6)
 print(chiSqResult)
 
 ```
+
