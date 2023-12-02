@@ -112,10 +112,14 @@ investors <- unicorn_data %>%
 
 investors = investors %>% 
   summarise(.by = select_investors,
-            investements=list(company)
-            )
+            investements=list(company), 
+            investements_bis=list(company)
+            ) %>% 
+  unnest(investements_bis) %>% 
+  unnest(investements)
 
-
+# Need to unlist + nest the Investements then delete the doubles in investements and find a way to delete the actual company inside
+# drop rows that have the same company name in it
 
 ```
 
