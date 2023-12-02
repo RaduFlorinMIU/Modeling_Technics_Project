@@ -43,11 +43,21 @@ unicorn_data <- read_excel("../DataSets/CB-Insights_Global-Unicorn-Club_2023.xls
 
 ```
 
+```{r}
+unicorn_data[duplicated(unicorn_data)==T, ]
+```
+
 ## Cleaning the data
 
 ```{r pressure}
 # Renaming Columns
 colnames(unicorn_data) <- c('company','valuation_billions','date_added','country','city','industry','select_investors')
+
+
+# Removing the duplicate company 
+unicorn_data = unicorn_data %>% 
+  distinct(company, .keep_all = T)
+
 
 # Removing useless columns
 unicorn_data = drop_na(unicorn_data, valuation_billions)
@@ -105,20 +115,69 @@ summary(unicorn_data)
 ## Transforming the Data
 
 ```{r}
-investors <- unicorn_data %>%
+# Creating an intermediary dataframe for later computations
+unicorn_transition <- unicorn_data %>%
   mutate(select_investors = strsplit(select_investors, ",")) %>% 
   unnest(select_investors) %>% 
-  mutate(select_investors = str_trim(select_investors))
+  mutate(select_investors = str_trim(select_investors)) 
 
-investors = investors %>% 
+# Creating the investors oriented dataframe for further analysis
+unicorn_investors = unicorn_transition %>% 
   summarise(.by = select_investors,
+            investements_count=n(),
             investements=list(company), 
-            investements_bis=list(company)
-            ) %>% 
-  unnest(investements_bis) %>% 
-  unnest(investements)
+            investements_sum_valuation=sum(valuation_billions),
+            investements_mean_valuation=mean(valuation_billions)
+            )
 
-# Need to unlist + nest the Investements then delete the doubles in investements and find a way to delete the actual company inside
+# Creating the associate companies columns 
+associate_companies = unicorn_transition %>% 
+  # Having two columns containing all the companies per Investor in a list
+    summarise(.by = select_investors,
+            associated_companies=list(company), 
+            company=list(company)
+            ) %>%
+  # For each company we have their investors and a list of the companies 
+  # the investors invested in. 
+  unnest(company) %>% 
+  # Unnesting the second column containg all the companies resulting in the 
+  #duplication of all the other columns
+  unnest(associated_companies) %>% 
+  # Deleting the company name from the associated_company list
+  subset(company!=associated_companies) %>% 
+  # For each company, we will delete all the duplicates in the association company
+  summarise(.by=company,
+            associated_companies = list(unique(associated_companies)), 
+            associated_count = n()
+            )
+  # group_by(company) %>%
+  # distinct(associated_companies)
+
+```
+
+
+```{r}
+investors_2 = investors %>% 
+  unnest(investements_bis) %>% 
+  unnest(investements) 
+
+investors_3 = investors_2 %>% 
+  subset(investements!=investements_bis)
+
+
+investors_4 = investors_3 %>% 
+  group_by(investements_bis) %>% 
+  distinct(investements, .keep_all = T)
+  
+
+test = investors_3 %>% 
+  group_by(investements_bis) %>% 
+  mutate(duplicated(investements))
+
+test_bis = test[test$`duplicated(investements)`==T,]
+
+x = test[test$investements=="SingleStore",]
+# Need to unlist + nesTt the Investements then delete the doubles in investements and find a way to delete the actual company inside
 # drop rows that have the same company name in it
 
 ```
