@@ -101,7 +101,8 @@ unicorn_data$year_added <- year(unicorn_data$date_added)
 
 unicorn_data <- unicorn_data %>%
   mutate(target = 
-           ifelse(valuation_billions >= 5, "Over 5 $B",  "Under 5 $B") %>% as.factor())
+           ifelse(valuation_billions >= 5, "Over 5 $B",  "Under 5 $B") %>% as.factor()) %>% 
+  mutate(over_5bill = ifelse(target == "Over 5 $B", 1, 0))
 
 unicorn_data %>% 
   arrange(industry, group_by = industry)
@@ -119,7 +120,7 @@ summary(unicorn_data)
 unicorn_transition <- unicorn_data %>%
   mutate(select_investors = strsplit(select_investors, ",")) %>% 
   unnest(select_investors) %>% 
-  mutate(select_investors = str_trim(select_investors)) 
+  mutate(select_investors = str_trim(select_investors))
 
 # Creating the investors oriented dataframe for further analysis
 unicorn_investors = unicorn_transition %>% 
@@ -127,11 +128,22 @@ unicorn_investors = unicorn_transition %>%
             investements_count=n(),
             investements=list(company), 
             investements_sum_valuation=sum(valuation_billions),
-            investements_mean_valuation=mean(valuation_billions)
+            investements_mean_valuation=mean(valuation_billions), 
+            investements_over5B_count=sum(over_5bill), 
+            investements_over5B_pct=investements_over5B_count/investements_count
             )
 
-# Creating the associate companies columns 
-associate_companies = unicorn_transition %>% 
+# Investor average percentage over 5B
+associate_investor = unicorn_investors %>% 
+  unnest(investements) %>% 
+  summarise(.by = investements, 
+            investements_avg_pct_over5B = mean(investements_over5B_pct)
+            )
+
+
+
+# Creating the associate companies trasition dataframe for later compuations 
+associate_transition = unicorn_transition %>% 
   # Having two columns containing all the companies per Investor in a list
     summarise(.by = select_investors,
             associated_companies=list(company), 
@@ -144,44 +156,58 @@ associate_companies = unicorn_transition %>%
   #duplication of all the other columns
   unnest(associated_companies) %>% 
   # Deleting the company name from the associated_company list
-  subset(company!=associated_companies) %>% 
   # For each company, we will delete all the duplicates in the association company
   summarise(.by=company,
-            associated_companies = list(unique(associated_companies)), 
-            associated_count = n()
+            associated_companies = unique(associated_companies)
             )
+
+# Creating associate companies data frame with info regarding the associated companies
+associate_companies = associate_transition %>% 
+  # Deleting the company name from the associated_company list
+  subset(company!=associated_companies) %>% 
+  left_join(unicorn_data, by=join_by(associated_companies == company)) %>% 
+  summarise(.by=company,
+            associated_companies = list(unique(associated_companies)), 
+            associated_count= n(),
+            associated_count_over5Bill=sum(over_5bill), 
+            associated_pct_over5Bill=associated_count_over5Bill/associated_count
+            )
+# Creating the associate valuation data frame with info regarding associate company valuation 
+
+associate_valuation = associate_transition %>% 
+  left_join(unicorn_data, by=join_by(associated_companies == company)) %>% 
+  summarise(.by = company,
+            association_total_value = sum(valuation_billions), 
+            association_mean_value = mean(valuation_billions)
+            )
+
+unicorn_data_complete = unicorn_data %>% 
+  left_join(associate_companies, by="company") %>% 
+  left_join(associate_valuation, by="company") %>% 
+  left_join(associate_investor, by=join_by(company == investements)) %>% 
+  mutate(associated_count = ifelse(
+    is.na(associated_count), 
+    0, 
+    associated_count
+    )
+  )
+
+# unicorn_data_complete[is.na(unicorn_data_complete$associated_count),]
+
+# unicorn_data_complete$associated_count = ifelse(
+#   is.na(unicorn_data_complete$associated_count), 
+#   0, 
+#   unicorn_data_complete$associated_count
+#   )
+
+
+summary(unicorn_data_complete)
+
+
   # group_by(company) %>%
   # distinct(associated_companies)
 
 ```
-
-
-```{r}
-investors_2 = investors %>% 
-  unnest(investements_bis) %>% 
-  unnest(investements) 
-
-investors_3 = investors_2 %>% 
-  subset(investements!=investements_bis)
-
-
-investors_4 = investors_3 %>% 
-  group_by(investements_bis) %>% 
-  distinct(investements, .keep_all = T)
-  
-
-test = investors_3 %>% 
-  group_by(investements_bis) %>% 
-  mutate(duplicated(investements))
-
-test_bis = test[test$`duplicated(investements)`==T,]
-
-x = test[test$investements=="SingleStore",]
-# Need to unlist + nesTt the Investements then delete the doubles in investements and find a way to delete the actual company inside
-# drop rows that have the same company name in it
-
-```
-
 
 
 ```{r}
