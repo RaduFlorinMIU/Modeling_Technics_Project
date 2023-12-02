@@ -132,42 +132,16 @@ unicorn_investors = unicorn_transition %>%
             investements_over5B_count=sum(over_5bill), 
             investements_over5B_pct=investements_over5B_count/investements_count
             )
-  # group_by(company) %>%
-  # distinct(associated_companies)
-
-```
-
-
-```{r}
-investors_2 = investors %>% 
-  unnest(investements_bis) %>% 
-  unnest(investements) 
-
-investors_3 = investors_2 %>% 
-  subset(investements!=investements_bis)
-
-
-investors_4 = investors_3 %>% 
-  group_by(investements_bis) %>% 
-  distinct(investements, .keep_all = T)
-  
-
-test = investors_3 %>% 
-  group_by(investements_bis) %>% 
-  mutate(duplicated(investements))
 
 # Investor average percentage over 5B
 associate_investor = unicorn_investors %>% 
   unnest(investements) %>% 
   summarise(.by = investements, 
             investements_avg_pct_over5B = mean(investements_over5B_pct)
+
             )
-test_bis = test[test$`duplicated(investements)`==T,]
-
-x = test[test$investements=="SingleStore",]
-# Need to unlist + nesTt the Investements then delete the doubles in investements and find a way to delete the actual company inside
-# drop rows that have the same company name in it
-
+  # group_by(company) %>%
+  # distinct(associated_companies)
 
 # Creating the associate companies trasition dataframe for later compuations 
 associate_transition = unicorn_transition %>% 
