@@ -120,7 +120,7 @@ summary(unicorn_data)
 unicorn_transition <- unicorn_data %>%
   mutate(select_investors = strsplit(select_investors, ",")) %>% 
   unnest(select_investors) %>% 
-  mutate(select_investors = str_trim(select_investors))
+  mutate(select_investors = str_trim(select_investors)) 
 
 # Creating the investors oriented dataframe for further analysis
 unicorn_investors = unicorn_transition %>% 
@@ -138,9 +138,10 @@ associate_investor = unicorn_investors %>%
   unnest(investements) %>% 
   summarise(.by = investements, 
             investements_avg_pct_over5B = mean(investements_over5B_pct)
+
             )
-
-
+  # group_by(company) %>%
+  # distinct(associated_companies)
 
 # Creating the associate companies trasition dataframe for later compuations 
 associate_transition = unicorn_transition %>% 
