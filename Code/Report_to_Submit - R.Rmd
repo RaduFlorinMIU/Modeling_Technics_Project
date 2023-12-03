@@ -53,10 +53,13 @@ unicorn_data[duplicated(unicorn_data)==T, ]
 # Renaming Columns
 colnames(unicorn_data) <- c('company','valuation_billions','date_added','country','city','industry','select_investors')
 
+# temp = unicorn_data[duplicated(unicorn_data),]
+# temp$Company
+# unicorn_data[unicorn_data$company %in% temp$company,]
 
 # Removing the duplicate company 
 unicorn_data = unicorn_data %>% 
-  distinct(company, .keep_all = T)
+  distinct( .keep_all = T)
 
 
 # Removing useless columns
@@ -108,12 +111,11 @@ unicorn_data %>%
   arrange(industry, group_by = industry)
 
 unicorn_data$industry = factor(unicorn_data$industry)
-
 unicorn_data$continent = factor(unicorn_data$continent)
 
 summary(unicorn_data)
 ```
-## Transforming the Data
+## Transform the Data
 
 ```{r}
 # Creating an intermediary dataframe for later computations
@@ -210,7 +212,6 @@ summary(unicorn_data_complete)
 
 ```
 
-
 ```{r}
 
 ggplot(unicorn_data, aes(x = industry)) +
@@ -275,6 +276,262 @@ chiSqResult <- chisq.test(table6)
 print(chiSqResult)
 
 
+```
+
+------------------------ Explanatory variables as factor ---------------------------------
+## Link between variables
+
+```{r}
+unicorn_data_complete$country<-factor(unicorn_data_complete$country)
+unicorn_data_complete$industry<-factor(unicorn_data_complete$industry)
+unicorn_data_complete$continent<-factor(unicorn_data_complete$continent)
+unicorn_data_complete$Number_of_Investors<-factor(unicorn_data_complete$Number_of_Investors)
+unicorn_data_complete$year_added<-factor(unicorn_data_complete$year_added)
+unicorn_data_complete$age<-factor(unicorn_data_complete$age)
+unicorn_data_complete$associated_count<-factor(unicorn_data_complete$associated_count)
+unicorn_data_complete$associated_count_over5Bill<-factor(unicorn_data_complete$associated_count_over5Bill)
+unicorn_data_complete$associated_pct_over5Bill<-factor(unicorn_data_complete$associated_pct_over5Bill)
+unicorn_data_complete$association_total_value<-factor(unicorn_data_complete$association_total_value)
+unicorn_data_complete$association_mean_value<-factor(unicorn_data_complete$association_mean_value)
+unicorn_data_complete$investements_avg_pct_over5B<-factor(unicorn_data_complete$investements_avg_pct_over5B)
+```
+
+Now that all our variables are categorical, we have 2 possible tests to compute. Both having the same hypotesis.
+H0: No link
+H1: Existing link
+
+```{r pressure, echo=FALSE}
+table1 <- table(unicorn_data_complete$country, unicorn_data_complete$target)
+chiSqResult <- chisq.test(table1)
+print(chiSqResult)
+
+
+table2 <- table(unicorn_data_complete$industry, unicorn_data_complete$target)
+chiSqResult <- chisq.test(table2)
+print(chiSqResult)
+
+
+table3 <- table(unicorn_data_complete$continent, unicorn_data_complete$target)
+chiSqResult <- chisq.test(table3)
+print(chiSqResult)
+
+
+table4 <- table(unicorn_data_complete$Number_of_Investors, unicorn_data_complete$target)
+chiSqResult <- chisq.test(table4)
+print(chiSqResult)
+
+
+table5 <- table(unicorn_data_complete$year_added, unicorn_data_complete$target)
+chiSqResult <- chisq.test(table5)
+print(chiSqResult)
+
+
+table6 <- table(unicorn_data_complete$age, unicorn_data_complete$target)
+chiSqResult <- chisq.test(table6)
+print(chiSqResult)
+
+table7 <- table(unicorn_data_complete$associated_count, unicorn_data_complete$target)
+chiSqResult <- chisq.test(table7)
+print(chiSqResult)
+
+table8 <- table(unicorn_data_complete$associated_count_over5Bill, unicorn_data_complete$target)
+chiSqResult <- chisq.test(table8)
+print(chiSqResult)
+
+table9 <- table(unicorn_data_complete$associated_pct_over5Bill, unicorn_data_complete$target)
+chiSqResult <- chisq.test(table9)
+print(chiSqResult)
+
+table10 <- table(unicorn_data_complete$association_total_value, unicorn_data_complete$target)
+chiSqResult <- chisq.test(table10)
+print(chiSqResult)
+
+table11 <- table(unicorn_data_complete$association_mean_value, unicorn_data_complete$target)
+chiSqResult <- chisq.test(table11)
+print(chiSqResult)
+
+table12 <- table(unicorn_data_complete$investements_avg_pct_over5B, unicorn_data_complete$target)
+chiSqResult <- chisq.test(table12)
+print(chiSqResult)
+
+
+```
+
+## KHI2 test with "coin"
+```{r}
+#install.packages("coin")
+library(coin)
+
+CoinResult1 <- chisq_test(table1)
+print(CoinResult1)
+
+CoinResult2 <- chisq.test(table2)
+print(CoinResult2)
+
+CoinResult3 <- chisq.test(table3)
+print(CoinResult3)
+
+CoinResult4 <- chisq.test(table4)
+print(CoinResult4)
+
+CoinResult5 <- chisq.test(table5)
+print(CoinResult5)
+
+CoinResult6 <- chisq.test(table6)
+print(CoinResult6)
+
+CoinResult7 <- chisq.test(table7)
+print(CoinResult7)
+
+CoinResult8 <- chisq.test(table8)
+print(CoinResult8)
+
+CoinResult9 <- chisq.test(table9)
+print(CoinResult9)
+
+CoinResult10 <- chisq.test(table10)
+print(CoinResult10)
+
+CoinResult11 <- chisq.test(table11)
+print(CoinResult11)
+
+CoinResult12 <- chisq.test(table12)
+print(CoinResult12)
+```
+
+```{r}
+print(table1)
+print(table2)
+print(table3)
+print(table4)
+print(table5)
+print(table6)
+print(table7)
+print(table8)
+print(table9)
+print(table10)
+print(table11)
+print(table12)
+```
+
+So we will try the Fisher test :
+
+```{r}
+FisherResult1 <- fisher.test(table1, simulate.p.value = TRUE)
+print(FisherResult1)
+
+FisherResult2 <- fisher.test(table2, simulate.p.value = TRUE)
+print(FisherResult2)
+
+FisherResult3 <- fisher.test(table3, simulate.p.value = TRUE)
+print(FisherResult3)
+
+FisherResult4 <- fisher.test(table4, simulate.p.value = TRUE)
+print(FisherResult4)
+
+FisherResult5 <- fisher.test(table5, simulate.p.value = TRUE)
+print(FisherResult5)
+
+FisherResult6 <- fisher.test(table6, simulate.p.value = TRUE)
+print(FisherResult6)
+
+FisherResult7 <- fisher.test(table7, simulate.p.value = TRUE)
+print(FisherResult7)
+
+FisherResult8 <- fisher.test(table8, simulate.p.value = TRUE)
+print(FisherResult8)
+
+FisherResult9 <- fisher.test(table9, simulate.p.value = TRUE)
+print(FisherResult9)
+
+FisherResult10 <- fisher.test(table10, simulate.p.value = TRUE)
+print(FisherResult10)
+
+FisherResult11 <- fisher.test(table11, simulate.p.value = TRUE)
+print(FisherResult11)
+
+FisherResult12 <- fisher.test(table12, simulate.p.value = TRUE)
+print(FisherResult12)
+```
+## Model Building 
+
+# Dataset splitting
+```{r}
+# Training set and test set
+set.seed(100)
+row.number <- sample(1:nrow(unicorn_data_complete), 0.8*nrow(unicorn_data_complete))
+train=unicorn_data_complete[row.number,]
+test=unicorn_data_complete[-row.number,]
+
+# Splitting efficiency check 
+
+prop.table(table(unicorn_data_complete$target))
+prop.table(table(train$target))
+prop.table(table(test$target))
+
+```
+Overall we have a higher proportion of Under 5 $B, that evenly distributed in each sets.
+
+#Logistic Regression
+
+#Train
+```{r}
+logit_model <- glm (target ~year_added + age + Number_of_Investors + 
+    associated_count + associated_count_over5Bill + associated_pct_over5Bill + 
+    association_total_value + association_mean_value + investements_avg_pct_over5B, 
+                      data=train,binomial(link="logit"))
+summary(logit_model)
+```
+## Performance evaluation 
+```{r}
+library(gmodels) 
+logit_prediction_test <- predict(logit_model, newdata = test, type = "response")
+
+prop.table(table(logit_prediction_test >0.5,test$target))
+
+CrossTable(logit_prediction_test>0.5,test$target, prop.chisq=FALSE,
+chisq=FALSE,prop.t=FALSE,dnn = c("Predicted","Actual"))
+```
+
+-----------------------------Decision Tree------------------------------
+```{r}
+library(rpart)
+library(rpart.plot)
+```
+
+Train Decision Tree model
+```{r}
+decision_tree <- rpart(target~year_added + age + Number_of_Investors + associated_count + associated_count_over5Bill + associated_pct_over5Bill + association_total_value + association_mean_value + investements_avg_pct_over5B,
+method="class", data=train,
+control=rpart.control(minsplit=1),
+parms=list(split="information"))
+
+summary(decision_tree)
+```
+
+Plot the decision tree
+```{r}
+rpart.plot(decision_tree, type=2, extra=1)
+```
+
+```{r}
+tree_prediction_test <- predict(decision_tree,newdata=test,type="class")
+```
+
+```{r}
+# Confusion matrix for decision tree
+confusion_tree <- table(tree_prediction_test, test$target)
+
+# Display confusion matrix
+print(confusion_tree)
+
+# Calculate accuracy for decision tree
+accuracy_tree <- sum(diag(confusion_tree))/sum(confusion_tree)
+print(paste("Accuracy for Decision Tree:", accuracy_tree))
+
+# CrossTable function for a more detailed analysis
+CrossTable(tree_prediction_test, test$target, prop.chisq=FALSE,
+           chisq=FALSE, prop.t=FALSE, dnn = c("Predicted", "Actual"))
 ```
 
 
