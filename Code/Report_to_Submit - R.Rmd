@@ -32,8 +32,26 @@ names_sort_count = function(data, decreasing=TRUE){
     names()
   )
 }
-```
 
+cors <- function(df, type="pearson") { 
+  # turn all three matrices (r, n, and P into a data frame)
+  M <- Hmisc::rcorr(as.matrix(df), type = type)
+  # return the three data frames in a list return(Mdf)
+  Mdf <- map(M, ~data.frame(.x))
+  return(Mdf)
+}
+
+formatted_cors <- function(df, type="pearson"){
+  cors(df, type) %>%
+    map(~rownames_to_column(.x, var="measure1")) %>%
+    # format each data set (r,P,n) long
+    map(~pivot_longer(.x, cols = -measure1, names_to = "measure2")) %>%
+    # merge our three list elements by binding the rows
+    bind_rows(.id = "id") %>%
+    pivot_wider(names_from = id, values_from = value) %>%
+    mutate(sig_p = ifelse(P < .05, T, F), p_if_sig = ifelse(P <.05, P, NA), r_if_sig = ifelse(P <.05, r, NA)) 
+}
+```
 
 ```{r}
 # Load the data
@@ -41,14 +59,6 @@ unicorn_data <- read_excel("../DataSets/CB-Insights_Global-Unicorn-Club_2023.xls
 ```
 
 ## Cleaning the data
-
-```{r}
-temp = unicorn_data[duplicated(unicorn_data$company),]
-temp$company
-unicorn_data[unicorn_data$company %in% temp$company,]
-
-paste(row.names(unicorn_data), unicorn_data$company)
-```
 
 ```{r pressure}
 # Renaming Columns
@@ -75,8 +85,6 @@ unicorn_data <- subset(unicorn_data, select = -city)
 # Removing ",," in "Select investors" correctly count  number of investors
 unicorn_data$select_investors <- gsub(",,", ",", unicorn_data$select_investors)
 
-# Removing all white spaces from "Select investors"
-
 # Counting the number of Investors
 unicorn_data$Number_of_Investors <- sapply(strsplit(as.character(unicorn_data$select_investors), ","), length)
 
@@ -101,13 +109,13 @@ unicorn_data$year_added <- year(unicorn_data$date_added)
 unicorn_data <- unicorn_data %>%
   mutate(target = 
            ifelse(valuation_billions >= 5, "Over 5 $B",  "Under 5 $B") %>% as.factor()) %>% 
-  mutate(over_5bill = ifelse(target == "Over 5 $B", 1, 0)) %>% 
-  
+  mutate(target_code = as.numeric(target) ) %>% 
+  # Making Sure each company name is well differentiated from one another
   mutate(company = paste(row.names(unicorn_data), unicorn_data$company))
   
 unicorn_data$industry = factor(unicorn_data$industry)
 unicorn_data$continent = factor(unicorn_data$continent)
-
+unicorn_data$country = factor(unicorn_data$country)
 ```
 ## Transform the Data
 
@@ -125,7 +133,7 @@ unicorn_investors = unicorn_transition %>%
             investements=list(company), 
             investements_sum_valuation=sum(valuation_billions),
             investements_mean_valuation=mean(valuation_billions), 
-            investements_over5B_count=sum(over_5bill), 
+            investements_over5B_count=sum(target_code), 
             investements_over5B_pct=investements_over5B_count/investements_count
             )
 
@@ -157,6 +165,7 @@ associate_transition = unicorn_transition %>%
             )
 
 # Creating associate companies data frame with info regarding the associated companies
+
 associate_companies = associate_transition %>% 
   # Deleting the company name from the associated_company list
   subset(company!=associated_companies) %>% 
@@ -164,11 +173,11 @@ associate_companies = associate_transition %>%
   summarise(.by=company,
             associated_companies = list(unique(associated_companies)), 
             associated_count= n(),
-            associated_count_over5Bill=sum(over_5bill), 
+            associated_count_over5Bill=sum(target_code), 
             associated_pct_over5Bill=associated_count_over5Bill/associated_count
             )
-# Creating the associate valuation data frame with info regarding associate company valuation 
 
+# Creating the associate valuation data frame with info regarding associate company valuation 
 associate_valuation = associate_transition %>% 
   left_join(unicorn_data, by=join_by(associated_companies == company)) %>% 
   summarise(.by = company,
@@ -179,17 +188,71 @@ associate_valuation = associate_transition %>%
 unicorn_data_complete = unicorn_data %>% 
   left_join(associate_companies, by="company") %>% 
   left_join(associate_valuation, by="company") %>% 
-  left_join(associate_investor, by=join_by(company == investements)) %>% 
+  left_join(associate_investor, by=join_by(company == investements))
+
+unicorn_data_complete = unicorn_data_complete %>% 
   mutate(associated_count = ifelse(
     is.na(associated_count), 
     0, 
     associated_count
     )
+  ) %>% 
+  mutate(associated_count_over5Bill = ifelse(
+    is.na(associated_count_over5Bill), 
+    0, 
+    associated_count_over5Bill
+    )
+  ) %>% 
+    mutate(associated_pct_over5Bill = ifelse(
+    is.na(associated_pct_over5Bill), 
+    0, 
+    associated_pct_over5Bill
+    )
   )
-
-summary(unicorn_data_complete)
-
 ```
+
+## Trim the Data 
+
+```{r}
+unicorn_data_trimmed = unicorn_data_complete %>% 
+  select(-c(date_added, select_investors, associated_companies, valuation_billions)) %>% 
+  mutate(country_code = as.numeric(country)) %>% 
+  mutate(industry_code = as.numeric(industry)) %>%
+  mutate(continent_code = as.numeric(continent))
+
+unicorn_data_trimmed %>% 
+  summary()
+  
+unicorns_corelation= unicorn_data_trimmed %>% 
+  select(-c(company, country, industry, target, continent, associated_count_over5Bill, associated_count, year_added))
+```
+
+```{r, fig.height=6.4, fig.width=8}
+formatted_cors(unicorns_corelation) %>% 
+  ggplot(aes(measure1, measure2, fill=r, label=round(r_if_sig,2))) +
+  geom_tile() +
+  labs(x = NULL, y = NULL, fill = "Pearson's\nCorrelation", title="Correlations in Unicorn_Corelation", subtitle="Only significant Pearson's correlation coefficients shown") +
+  scale_fill_gradient2(mid="#FBFEF9",low="#0C6291",high="#A63446", limits=c(-1,1)) +
+  geom_text() +
+  theme_classic() +
+  scale_x_discrete(expand=c(0,0)) +
+  scale_y_discrete(expand=c(0,0)) +
+  theme(axis.text.x = element_text(angle = 45, hjust=1))
+```
+
+```{r, fig.height=6.4, fig.width=8}
+formatted_cors(unicorns_corelation, "spearman") %>% 
+  ggplot(aes(measure1, measure2, fill=r, label=round(r_if_sig,2))) +
+  geom_tile() +
+  labs(x = NULL, y = NULL, fill = "Spearman's\nCorrelation", title="Correlations in Unicorn_Corelation", subtitle="Only significant Pearson's correlation coefficients shown") +
+  scale_fill_gradient2(mid="#FBFEF9",low="#0C6291",high="#A63446", limits=c(-1,1)) +
+  geom_text() +
+  theme_classic() +
+  scale_x_discrete(expand=c(0,0)) +
+  scale_y_discrete(expand=c(0,0)) +
+  theme(axis.text.x = element_text(angle = 45, hjust=1))
+```
+
 
 ```{r}
 
