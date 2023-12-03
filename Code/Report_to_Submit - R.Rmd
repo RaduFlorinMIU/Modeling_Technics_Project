@@ -32,35 +32,31 @@ names_sort_count = function(data, decreasing=TRUE){
     names()
   )
 }
-
-
 ```
 
 
 ```{r}
 # Load the data
 unicorn_data <- read_excel("../DataSets/CB-Insights_Global-Unicorn-Club_2023.xlsx")
-
-```
-
-```{r}
-unicorn_data[duplicated(unicorn_data)==T, ]
 ```
 
 ## Cleaning the data
+
+```{r}
+temp = unicorn_data[duplicated(unicorn_data$company),]
+temp$company
+unicorn_data[unicorn_data$company %in% temp$company,]
+
+paste(row.names(unicorn_data), unicorn_data$company)
+```
 
 ```{r pressure}
 # Renaming Columns
 colnames(unicorn_data) <- c('company','valuation_billions','date_added','country','city','industry','select_investors')
 
-# temp = unicorn_data[duplicated(unicorn_data),]
-# temp$Company
-# unicorn_data[unicorn_data$company %in% temp$company,]
-
 # Removing the duplicate company 
 unicorn_data = unicorn_data %>% 
   distinct( .keep_all = T)
-
 
 # Removing useless columns
 unicorn_data = drop_na(unicorn_data, valuation_billions)
@@ -105,15 +101,13 @@ unicorn_data$year_added <- year(unicorn_data$date_added)
 unicorn_data <- unicorn_data %>%
   mutate(target = 
            ifelse(valuation_billions >= 5, "Over 5 $B",  "Under 5 $B") %>% as.factor()) %>% 
-  mutate(over_5bill = ifelse(target == "Over 5 $B", 1, 0))
-
-unicorn_data %>% 
-  arrange(industry, group_by = industry)
-
+  mutate(over_5bill = ifelse(target == "Over 5 $B", 1, 0)) %>% 
+  
+  mutate(company = paste(row.names(unicorn_data), unicorn_data$company))
+  
 unicorn_data$industry = factor(unicorn_data$industry)
 unicorn_data$continent = factor(unicorn_data$continent)
 
-summary(unicorn_data)
 ```
 ## Transform the Data
 
@@ -140,10 +134,8 @@ associate_investor = unicorn_investors %>%
   unnest(investements) %>% 
   summarise(.by = investements, 
             investements_avg_pct_over5B = mean(investements_over5B_pct)
-
             )
-  # group_by(company) %>%
-  # distinct(associated_companies)
+
 
 # Creating the associate companies trasition dataframe for later compuations 
 associate_transition = unicorn_transition %>% 
@@ -195,20 +187,7 @@ unicorn_data_complete = unicorn_data %>%
     )
   )
 
-# unicorn_data_complete[is.na(unicorn_data_complete$associated_count),]
-
-# unicorn_data_complete$associated_count = ifelse(
-#   is.na(unicorn_data_complete$associated_count), 
-#   0, 
-#   unicorn_data_complete$associated_count
-#   )
-
-
 summary(unicorn_data_complete)
-
-
-  # group_by(company) %>%
-  # distinct(associated_companies)
 
 ```
 
@@ -278,7 +257,7 @@ print(chiSqResult)
 
 ```
 
------------------------- Explanatory variables as factor ---------------------------------
+------------------------ Explanatory variables as factor 
 ## Link between variables
 
 ```{r}
