@@ -9,6 +9,8 @@ output: word_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+## Loading packages
+
 ```{r, warning=FALSE}
 # Load the package
 library(tidyverse)
@@ -22,6 +24,8 @@ library(hrbrthemes) # different themes for ggplot2
 library(paletteer)
 library(plotly) # to have dynamic plot
 ```
+
+## Custom made functions
 
 ```{r}
 names_sort_count = function(data, decreasing=TRUE){
@@ -52,6 +56,8 @@ formatted_cors <- function(df, type="pearson"){
     mutate(sig_p = ifelse(P < .05, T, F), p_if_sig = ifelse(P <.05, P, NA), r_if_sig = ifelse(P <.05, r, NA)) 
 }
 ```
+
+# Data Processing
 
 ```{r}
 # Load the data
@@ -117,7 +123,8 @@ unicorn_data$industry = factor(unicorn_data$industry)
 unicorn_data$continent = factor(unicorn_data$continent)
 unicorn_data$country = factor(unicorn_data$country)
 ```
-## Transform the Data
+
+## Enriching the Data
 
 ```{r}
 # Creating an intermediary dataframe for later computations
@@ -211,7 +218,7 @@ unicorn_data_complete = unicorn_data_complete %>%
   )
 ```
 
-## Trim the Data 
+# Corelation Check
 
 ```{r}
 unicorn_data_trimmed = unicorn_data_complete %>% 
@@ -226,6 +233,8 @@ unicorn_data_trimmed %>%
 unicorns_corelation= unicorn_data_trimmed %>% 
   select(-c(company, country, industry, target, continent, associated_count_over5Bill, associated_count, year_added))
 ```
+
+## Correlation Matrix
 
 ```{r, fig.height=6.4, fig.width=8}
 formatted_cors(unicorns_corelation) %>% 
@@ -253,6 +262,7 @@ formatted_cors(unicorns_corelation, "spearman") %>%
   theme(axis.text.x = element_text(angle = 45, hjust=1))
 ```
 
+# Plots to explore the Data
 
 ```{r}
 
@@ -287,41 +297,15 @@ ggplot(unicorn_data, aes(x = Number_of_Investors, fill = industry)) +
   scale_fill_paletteer_d("awtools::a_palette")
 ```
 
-```{r pressure, echo=FALSE}
-table1 <- table(unicorn_data$country, unicorn_data$target)
-chiSqResult <- chisq.test(table1)
-print(chiSqResult)
 
+# Creating separete datasets for each Model
 
-table2 <- table(unicorn_data$industry, unicorn_data$target)
-chiSqResult <- chisq.test(table2)
-print(chiSqResult)
-
-
-table3 <- table(unicorn_data$continent, unicorn_data$target)
-chiSqResult <- chisq.test(table3)
-print(chiSqResult)
-
-
-table4 <- table(unicorn_data$Number_of_Investors, unicorn_data$target)
-chiSqResult <- chisq.test(table4)
-print(chiSqResult)
-
-
-table5 <- table(unicorn_data$Year_Joined, unicorn_data$target)
-chiSqResult <- chisq.test(table5)
-print(chiSqResult)
-
-
-table6 <- table(unicorn_data$Age, unicorn_data$target)
-chiSqResult <- chisq.test(table6)
-print(chiSqResult)
-
+```{r}
 
 ```
 
------------------------- Explanatory variables as factor 
-## Link between variables
+
+# Explanatory variables as factor
 
 ```{r}
 unicorn_data_complete$country<-factor(unicorn_data_complete$country)
@@ -338,9 +322,9 @@ unicorn_data_complete$association_mean_value<-factor(unicorn_data_complete$assoc
 unicorn_data_complete$investements_avg_pct_over5B<-factor(unicorn_data_complete$investements_avg_pct_over5B)
 ```
 
-Now that all our variables are categorical, we have 2 possible tests to compute. Both having the same hypotesis.
-H0: No link
-H1: Existing link
+Now that all our variables are categorical, we have 2 possible tests to compute. Both having the same hypotesis. H0: No link H1: Existing link
+
+## Link between variables
 
 ```{r pressure, echo=FALSE}
 table1 <- table(unicorn_data_complete$country, unicorn_data_complete$target)
@@ -400,6 +384,7 @@ print(chiSqResult)
 ```
 
 ## KHI2 test with "coin"
+
 ```{r}
 #install.packages("coin")
 library(coin)
@@ -495,9 +480,12 @@ print(FisherResult11)
 FisherResult12 <- fisher.test(table12, simulate.p.value = TRUE)
 print(FisherResult12)
 ```
-## Model Building 
 
-# Dataset splitting
+
+# Model Building
+
+## Dataset splitting
+
 ```{r}
 # Training set and test set
 set.seed(100)
@@ -512,11 +500,13 @@ prop.table(table(train$target))
 prop.table(table(test$target))
 
 ```
-Overall we have a higher proportion of Under 5 $B, that evenly distributed in each sets.
 
-#Logistic Regression
+Overall we have a higher proportion of Under 5 \$B, that evenly distributed in each sets.
 
-#Train
+# Logistic Regression
+
+## Train
+
 ```{r}
 logit_model <- glm (target ~year_added + age + Number_of_Investors + 
     associated_count + associated_count_over5Bill + associated_pct_over5Bill + 
@@ -524,7 +514,9 @@ logit_model <- glm (target ~year_added + age + Number_of_Investors +
                       data=train,binomial(link="logit"))
 summary(logit_model)
 ```
-## Performance evaluation 
+
+## Performance evaluation
+
 ```{r}
 library(gmodels) 
 logit_prediction_test <- predict(logit_model, newdata = test, type = "response")
@@ -535,23 +527,24 @@ CrossTable(logit_prediction_test>0.5,test$target, prop.chisq=FALSE,
 chisq=FALSE,prop.t=FALSE,dnn = c("Predicted","Actual"))
 ```
 
------------------------------Decision Tree------------------------------
-```{r}
+# Decision Tree
+
+```{r Library}
 library(rpart)
 library(rpart.plot)
 ```
 
-Train Decision Tree model
+##Train Decision Tree model
+
 ```{r}
 decision_tree <- rpart(target~year_added + age + Number_of_Investors + associated_count + associated_count_over5Bill + associated_pct_over5Bill + association_total_value + association_mean_value + investements_avg_pct_over5B,
 method="class", data=train,
 control=rpart.control(minsplit=1),
 parms=list(split="information"))
-
-summary(decision_tree)
 ```
 
-Plot the decision tree
+## Plot the decision tree
+
 ```{r}
 rpart.plot(decision_tree, type=2, extra=1)
 ```
@@ -576,4 +569,22 @@ CrossTable(tree_prediction_test, test$target, prop.chisq=FALSE,
            chisq=FALSE, prop.t=FALSE, dnn = c("Predicted", "Actual"))
 ```
 
+
+# Naïve Bayes
+
+```{r}
+# Load necessary libraries
+library(e1071)  # For Naive Bayes
+```
+
+## Train the Naive Bayes model
+```{r}
+naive_bayes_model <- naiveBayes(target ~ year_added + age + Number_of_Investors + 
+                                  associated_count + associated_count_over5Bill + 
+                                  associated_pct_over5Bill + association_total_value + 
+                                  association_mean_value + investements_avg_pct_over5B, 
+                                data = train)
+
+
+```
 
