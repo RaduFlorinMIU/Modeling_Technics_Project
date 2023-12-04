@@ -297,14 +297,6 @@ ggplot(unicorn_data, aes(x = Number_of_Investors, fill = industry)) +
   scale_fill_paletteer_d("awtools::a_palette")
 ```
 
-
-# Creating separete datasets for each Model
-
-```{r}
-
-```
-
-
 # Explanatory variables as factor
 
 ```{r}
@@ -381,64 +373,6 @@ chiSqResult <- chisq.test(table12)
 print(chiSqResult)
 
 
-```
-
-## KHI2 test with "coin"
-
-```{r}
-#install.packages("coin")
-library(coin)
-
-CoinResult1 <- chisq_test(table1)
-print(CoinResult1)
-
-CoinResult2 <- chisq.test(table2)
-print(CoinResult2)
-
-CoinResult3 <- chisq.test(table3)
-print(CoinResult3)
-
-CoinResult4 <- chisq.test(table4)
-print(CoinResult4)
-
-CoinResult5 <- chisq.test(table5)
-print(CoinResult5)
-
-CoinResult6 <- chisq.test(table6)
-print(CoinResult6)
-
-CoinResult7 <- chisq.test(table7)
-print(CoinResult7)
-
-CoinResult8 <- chisq.test(table8)
-print(CoinResult8)
-
-CoinResult9 <- chisq.test(table9)
-print(CoinResult9)
-
-CoinResult10 <- chisq.test(table10)
-print(CoinResult10)
-
-CoinResult11 <- chisq.test(table11)
-print(CoinResult11)
-
-CoinResult12 <- chisq.test(table12)
-print(CoinResult12)
-```
-
-```{r}
-print(table1)
-print(table2)
-print(table3)
-print(table4)
-print(table5)
-print(table6)
-print(table7)
-print(table8)
-print(table9)
-print(table10)
-print(table11)
-print(table12)
 ```
 
 So we will try the Fisher test :
