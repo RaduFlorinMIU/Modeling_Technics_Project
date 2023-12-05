@@ -56,32 +56,17 @@ formatted_cors <- function(df, type="pearson"){
     mutate(sig_p = ifelse(P < .05, T, F), p_if_sig = ifelse(P <.05, P, NA), r_if_sig = ifelse(P <.05, r, NA)) 
 }
 
-chisq.test_corr = function(data_frame=unicorns_corelation_num, test=chisq.test){
-  column_names = colnames(data_frame)
-  result_list <- lapply(column_names, function(i) {
-    lapply(column_names, function(j) {
-      value <- test(data_frame[[i]], 
-                    data_frame[[j]])$p.value
-      return(data.frame(mesure1 = i, mesure2 = j, p_value = value))
-    })
-  })
-  
-  result_df <- do.call(rbind, unlist(result_list, recursive = FALSE))
-  return (result_df)
-}
-
 chisq_test_corr = function(data_frame=unicorns_corelation){
   column_names = colnames(data_frame)
   result_list <- lapply(column_names, function(i) {
-    lapply(column_names, function(j) {
-      value <- fisher.test(data_frame[[i]], 
-                    data_frame[[j]], )$p.value
-      return(data.frame(mesure1 = i, mesure2 = j, p_value = value))
-    })
+    value <- chisq.test(data_frame$target_code, 
+                        data_frame[[i]])$p.value
+    return(data.frame(measure1 = "target_code", measure2 = i, p_value = value))
   })
   
-  result_df <- do.call(rbind, unlist(result_list, recursive = FALSE))
-  return (result_df[order(result_df$p_value),])
+  result_df <- do.call(rbind, result_list)
+  result_df = result_df[order(result_df$p_value),]
+  return (result_df)
 }
 
 fisher_test_corr = function(data_frame=unicorns_corelation){
@@ -89,11 +74,12 @@ fisher_test_corr = function(data_frame=unicorns_corelation){
   result_list <- lapply(column_names, function(i) {
       value <- fisher.test(data_frame$target_code, 
                     data_frame[[i]], simulate.p.value = TRUE)$p.value
-      return(data.frame(mesure1 = "target_code", mesure2 = i, p_value = value))
+      return(data.frame(measure1 = "target_code", measure2 = i, p_value = value))
   })
   
   result_df <- do.call(rbind, result_list)
-  return (result_df[order(result_df$p_value),])
+  result_df = result_df[order(result_df$p_value),]
+  return (result_df)
 }
 ```
 
@@ -305,14 +291,14 @@ unicorns_corelation = unicorn_data_complete %>%
 unicorns_corelation %>% 
   summary()
   
-unicorns_corelation = unicorns_corelation_num %>% 
+unicorns_corelation = unicorns_corelation %>% 
   select(-c(company, country, industry, target, continent, year_added))
 ```
 
 ## Correlation Matrix
 
 ```{r, fig.height=6.4, fig.width=8}
-formatted_cors(unicorns_corelation_num) %>% 
+formatted_cors(unicorns_corelation) %>% 
   ggplot(aes(measure1, measure2, fill=r, label=round(r_if_sig,2))) +
   geom_tile() +
   labs(x = NULL, y = NULL, fill = "Pearson's\nCorrelation", title="Correlations in Unicorn_Corelation", subtitle="Only significant Pearson's correlation coefficients shown") +
@@ -325,7 +311,7 @@ formatted_cors(unicorns_corelation_num) %>%
 ```
 
 ```{r, fig.height=6.4, fig.width=8}
-formatted_cors(unicorns_corelation_num, "spearman") %>% 
+formatted_cors(unicorns_corelation, "spearman") %>% 
   ggplot(aes(measure1, measure2, fill=r, label=round(r_if_sig,2))) +
   geom_tile() +
   labs(x = NULL, y = NULL, fill = "Spearman's\nCorrelation", title="Correlations in Unicorn_Corelation", subtitle="Only significant Pearson's correlation coefficients shown") +
@@ -339,166 +325,46 @@ formatted_cors(unicorns_corelation_num, "spearman") %>%
 
 # Corelation : Khi2 and Fisher
 ```{r}
-column_names <- colnames(unicorns_corelation_num)
-result_list <- lapply(column_names, function(i) {
-  lapply(column_names, function(j) {
-    value <- chisq.test(factor(unicorns_corelation_num[[i]]), 
-                        factor(unicorns_corelation_num[[j]]))$p.value
-    return(data.frame(mesure1 = i, mesure2 = j, value = value))
-  })
-})
-result_df_2 <- do.call(rbind, unlist(result_list, recursive = FALSE))
+chisq_test_data = chisq_test_corr() 
+
+chisq_test_data %>% 
+  ggplot(aes(x=measure2, y=p_value)) +
+  geom_segment( aes(x=measure2, xend=measure2, y=0, yend=p_value), color="skyblue") +
+  geom_point( color="blue", size=4, alpha=0.6) +
+  theme_light() +
+  coord_flip() +
+  theme(
+    panel.grid.major.y = element_blank(),
+    panel.border = element_blank(),
+    axis.ticks.y = element_blank()
+  ) +
+  scale_y_continuous(breaks = seq(0, 1, 0.1), labels = scales::percent_format(scale = 1)) +
+  geom_hline(yintercept = 0.05, linetype = "dashed", color = "red")+
+  xlim(chisq_test_data$measure2)+
+  labs(x = NULL, title="Khi2 correlations between all varaibles and Target")
 
 ```
 
 ```{r}
-unicorns_corelation_cat = unicorn_data_complete %>% 
-  select(-c(date_added, select_investors, associated_companies, valuation_billions))
-colnames(unicorns_corelation_cat)
+fisher_test_data = fisher_test_corr() 
 
-
-
-mesure1 = c()
-mesure2 = c()
-value=c()
-for (i in colnames(unicorns_corelation_num)) {
-  for (j in colnames(unicorns_corelation_num)) {
-    mesure1=c(mesure1, i)
-    mesure2=c(mesure2, j)
-    value = c(value,
-      chisq.test(unicorns_corelation_num[[i]], 
-               unicorns_corelation_num[[j]])$p.value
-    )
-  }
-}
-
-colnames(unicorns_corelation_num)
-chisq.test(unicorns_corelation_num$country_code, unicorns_corelation_num$target_code)$p.value
-
-chisq.test(unicorns_corelation_num[["country_code"]], unicorns_corelation_num[["target_code"]])$p.value
-
-chiSqResult$p.value
-
-
+fisher_test_data %>% 
+  ggplot(aes(x=measure2, y=p_value)) +
+  geom_segment( aes(x=measure2, xend=measure2, y=0, yend=p_value), color="skyblue") +
+  geom_point( color="blue", size=4, alpha=0.6) +
+  theme_light() +
+  coord_flip() +
+  theme(
+    panel.grid.major.y = element_blank(),
+    panel.border = element_blank(),
+    axis.ticks.y = element_blank()
+  ) +
+  scale_y_continuous(breaks = seq(0, 1, 0.1), labels = scales::percent_format(scale = 1)) +
+  geom_hline(yintercept = 0.05, linetype = "dashed", color = "red")+
+  xlim(fisher_test_data$measure2)+
+  labs(x = NULL, title="Fisher correlations between all varaibles and Target")
 ```
 
-```{r}
-unicorn_data_complete$country<-factor(unicorn_data_complete$country)
-unicorn_data_complete$industry<-factor(unicorn_data_complete$industry)
-unicorn_data_complete$continent<-factor(unicorn_data_complete$continent)
-unicorn_data_complete$Number_of_Investors<-factor(unicorn_data_complete$Number_of_Investors)
-unicorn_data_complete$year_added<-factor(unicorn_data_complete$year_added)
-unicorn_data_complete$age<-factor(unicorn_data_complete$age)
-unicorn_data_complete$associated_count<-factor(unicorn_data_complete$associated_count)
-unicorn_data_complete$associated_count_over5Bill<-factor(unicorn_data_complete$associated_count_over5Bill)
-unicorn_data_complete$associated_pct_over5Bill<-factor(unicorn_data_complete$associated_pct_over5Bill)
-unicorn_data_complete$association_total_value<-factor(unicorn_data_complete$association_total_value)
-unicorn_data_complete$association_mean_value<-factor(unicorn_data_complete$association_mean_value)
-unicorn_data_complete$investements_avg_pct_over5B<-factor(unicorn_data_complete$investements_avg_pct_over5B)
-```
-
-Now that all our variables are categorical, we have 2 possible tests to compute. Both having the same hypotesis. H0: No link H1: Existing link
-
-## Link between variables
-
-```{r pressure, echo=FALSE}
-table1 <- table(unicorn_data_complete$country, unicorn_data_complete$target)
-chiSqResult <- chisq.test(table1)
-print(chiSqResult)
-
-
-table2 <- table(unicorn_data_complete$industry, unicorn_data_complete$target)
-chiSqResult <- chisq.test(table2)
-print(chiSqResult)
-
-
-table3 <- table(unicorn_data_complete$continent, unicorn_data_complete$target)
-chiSqResult <- chisq.test(table3)
-print(chiSqResult)
-
-
-table4 <- table(unicorn_data_complete$Number_of_Investors, unicorn_data_complete$target)
-chiSqResult <- chisq.test(table4)
-print(chiSqResult)
-
-
-table5 <- table(unicorn_data_complete$year_added, unicorn_data_complete$target)
-chiSqResult <- chisq.test(table5)
-print(chiSqResult)
-
-
-table6 <- table(unicorn_data_complete$age, unicorn_data_complete$target)
-chiSqResult <- chisq.test(table6)
-print(chiSqResult)
-
-table7 <- table(unicorn_data_complete$associated_count, unicorn_data_complete$target)
-chiSqResult <- chisq.test(table7)
-print(chiSqResult)
-
-table8 <- table(unicorn_data_complete$associated_count_over5Bill, unicorn_data_complete$target)
-chiSqResult <- chisq.test(table8)
-print(chiSqResult)
-
-table9 <- table(unicorn_data_complete$associated_pct_over5Bill, unicorn_data_complete$target)
-chiSqResult <- chisq.test(table9)
-print(chiSqResult)
-
-table10 <- table(unicorn_data_complete$association_total_value, unicorn_data_complete$target)
-chiSqResult <- chisq.test(table10)
-print(chiSqResult)
-
-table11 <- table(unicorn_data_complete$association_mean_value, unicorn_data_complete$target)
-chiSqResult <- chisq.test(table11)
-print(chiSqResult)
-
-table12 <- table(unicorn_data_complete$investements_avg_pct_over5B, unicorn_data_complete$target)
-chiSqResult <- chisq.test(table12)
-print(chiSqResult)
-
-
-```
-
-So we will try the Fisher test :
-
-```{r}
-FisherResult1 <- fisher.test(table1, simulate.p.value = TRUE)
-print(FisherResult1)
-
-fisher.test(unicorns_corelation_num$target_code, unicorns_corelation_num$country_code,simulate.p.value = TRUE)
-
-FisherResult2 <- fisher.test(table2, simulate.p.value = TRUE)
-print(FisherResult2)
-
-FisherResult3 <- fisher.test(table3, simulate.p.value = TRUE)
-print(FisherResult3)
-
-FisherResult4 <- fisher.test(table4, simulate.p.value = TRUE)
-print(FisherResult4)
-
-FisherResult5 <- fisher.test(table5, simulate.p.value = TRUE)
-print(FisherResult5)
-
-FisherResult6 <- fisher.test(table6, simulate.p.value = TRUE)
-print(FisherResult6)
-
-FisherResult7 <- fisher.test(table7, simulate.p.value = TRUE)
-print(FisherResult7)
-
-FisherResult8 <- fisher.test(table8, simulate.p.value = TRUE)
-print(FisherResult8)
-
-FisherResult9 <- fisher.test(table9, simulate.p.value = TRUE)
-print(FisherResult9)
-
-FisherResult10 <- fisher.test(table10, simulate.p.value = TRUE)
-print(FisherResult10)
-
-FisherResult11 <- fisher.test(table11, simulate.p.value = TRUE)
-print(FisherResult11)
-
-FisherResult12 <- fisher.test(table12, simulate.p.value = TRUE)
-print(FisherResult12)
-```
 
 # Model Building
 
@@ -595,6 +461,20 @@ library(e1071)  # For Naive Bayes
 ```
 
 ## Train the Naive Bayes model
+```{r}
+unicorn_data_complete$country<-factor(unicorn_data_complete$country)
+unicorn_data_complete$industry<-factor(unicorn_data_complete$industry)
+unicorn_data_complete$continent<-factor(unicorn_data_complete$continent)
+unicorn_data_complete$Number_of_Investors<-factor(unicorn_data_complete$Number_of_Investors)
+unicorn_data_complete$year_added<-factor(unicorn_data_complete$year_added)
+unicorn_data_complete$age<-factor(unicorn_data_complete$age)
+unicorn_data_complete$associated_count<-factor(unicorn_data_complete$associated_count)
+unicorn_data_complete$associated_count_over5Bill<-factor(unicorn_data_complete$associated_count_over5Bill)
+unicorn_data_complete$associated_pct_over5Bill<-factor(unicorn_data_complete$associated_pct_over5Bill)
+unicorn_data_complete$association_total_value<-factor(unicorn_data_complete$association_total_value)
+unicorn_data_complete$association_mean_value<-factor(unicorn_data_complete$association_mean_value)
+unicorn_data_complete$investements_avg_pct_over5B<-factor(unicorn_data_complete$investements_avg_pct_over5B)
+```
 
 ```{r}
 naive_bayes_model <- naiveBayes(target ~ year_added + age + Number_of_Investors + 
