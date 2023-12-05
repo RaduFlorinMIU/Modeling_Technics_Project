@@ -55,6 +55,46 @@ formatted_cors <- function(df, type="pearson"){
     pivot_wider(names_from = id, values_from = value) %>%
     mutate(sig_p = ifelse(P < .05, T, F), p_if_sig = ifelse(P <.05, P, NA), r_if_sig = ifelse(P <.05, r, NA)) 
 }
+
+chisq.test_corr = function(data_frame=unicorns_corelation_num, test=chisq.test){
+  column_names = colnames(data_frame)
+  result_list <- lapply(column_names, function(i) {
+    lapply(column_names, function(j) {
+      value <- test(data_frame[[i]], 
+                    data_frame[[j]])$p.value
+      return(data.frame(mesure1 = i, mesure2 = j, p_value = value))
+    })
+  })
+  
+  result_df <- do.call(rbind, unlist(result_list, recursive = FALSE))
+  return (result_df)
+}
+
+chisq_test_corr = function(data_frame=unicorns_corelation){
+  column_names = colnames(data_frame)
+  result_list <- lapply(column_names, function(i) {
+    lapply(column_names, function(j) {
+      value <- fisher.test(data_frame[[i]], 
+                    data_frame[[j]], )$p.value
+      return(data.frame(mesure1 = i, mesure2 = j, p_value = value))
+    })
+  })
+  
+  result_df <- do.call(rbind, unlist(result_list, recursive = FALSE))
+  return (result_df[order(result_df$p_value),])
+}
+
+fisher_test_corr = function(data_frame=unicorns_corelation){
+  column_names = colnames(data_frame)
+  result_list <- lapply(column_names, function(i) {
+      value <- fisher.test(data_frame$target_code, 
+                    data_frame[[i]], simulate.p.value = TRUE)$p.value
+      return(data.frame(mesure1 = "target_code", mesure2 = i, p_value = value))
+  })
+  
+  result_df <- do.call(rbind, result_list)
+  return (result_df[order(result_df$p_value),])
+}
 ```
 
 # Data Processing
@@ -218,50 +258,6 @@ unicorn_data_complete = unicorn_data_complete %>%
   )
 ```
 
-# Corelation Check
-
-```{r}
-unicorn_data_trimmed = unicorn_data_complete %>% 
-  select(-c(date_added, select_investors, associated_companies, valuation_billions)) %>% 
-  mutate(country_code = as.numeric(country)) %>% 
-  mutate(industry_code = as.numeric(industry)) %>%
-  mutate(continent_code = as.numeric(continent))
-
-unicorn_data_trimmed %>% 
-  summary()
-  
-unicorns_corelation= unicorn_data_trimmed %>% 
-  select(-c(company, country, industry, target, continent, associated_count_over5Bill, associated_count, year_added))
-```
-
-## Correlation Matrix
-
-```{r, fig.height=6.4, fig.width=8}
-formatted_cors(unicorns_corelation) %>% 
-  ggplot(aes(measure1, measure2, fill=r, label=round(r_if_sig,2))) +
-  geom_tile() +
-  labs(x = NULL, y = NULL, fill = "Pearson's\nCorrelation", title="Correlations in Unicorn_Corelation", subtitle="Only significant Pearson's correlation coefficients shown") +
-  scale_fill_gradient2(mid="#FBFEF9",low="#0C6291",high="#A63446", limits=c(-1,1)) +
-  geom_text() +
-  theme_classic() +
-  scale_x_discrete(expand=c(0,0)) +
-  scale_y_discrete(expand=c(0,0)) +
-  theme(axis.text.x = element_text(angle = 45, hjust=1))
-```
-
-```{r, fig.height=6.4, fig.width=8}
-formatted_cors(unicorns_corelation, "spearman") %>% 
-  ggplot(aes(measure1, measure2, fill=r, label=round(r_if_sig,2))) +
-  geom_tile() +
-  labs(x = NULL, y = NULL, fill = "Spearman's\nCorrelation", title="Correlations in Unicorn_Corelation", subtitle="Only significant Pearson's correlation coefficients shown") +
-  scale_fill_gradient2(mid="#FBFEF9",low="#0C6291",high="#A63446", limits=c(-1,1)) +
-  geom_text() +
-  theme_classic() +
-  scale_x_discrete(expand=c(0,0)) +
-  scale_y_discrete(expand=c(0,0)) +
-  theme(axis.text.x = element_text(angle = 45, hjust=1))
-```
-
 # Plots to explore the Data
 
 ```{r}
@@ -297,7 +293,94 @@ ggplot(unicorn_data, aes(x = Number_of_Investors, fill = industry)) +
   scale_fill_paletteer_d("awtools::a_palette")
 ```
 
-# Explanatory variables as factor
+# Corelation : Pearson and Spearman
+
+```{r}
+unicorns_corelation = unicorn_data_complete %>% 
+  select(-c(date_added, select_investors, associated_companies, valuation_billions)) %>% 
+  mutate(country_code = as.numeric(country)) %>% 
+  mutate(industry_code = as.numeric(industry)) %>%
+  mutate(continent_code = as.numeric(continent))
+
+unicorns_corelation %>% 
+  summary()
+  
+unicorns_corelation = unicorns_corelation_num %>% 
+  select(-c(company, country, industry, target, continent, year_added))
+```
+
+## Correlation Matrix
+
+```{r, fig.height=6.4, fig.width=8}
+formatted_cors(unicorns_corelation_num) %>% 
+  ggplot(aes(measure1, measure2, fill=r, label=round(r_if_sig,2))) +
+  geom_tile() +
+  labs(x = NULL, y = NULL, fill = "Pearson's\nCorrelation", title="Correlations in Unicorn_Corelation", subtitle="Only significant Pearson's correlation coefficients shown") +
+  scale_fill_gradient2(mid="#FBFEF9",low="#0C6291",high="#A63446", limits=c(-1,1)) +
+  geom_text() +
+  theme_classic() +
+  scale_x_discrete(expand=c(0,0)) +
+  scale_y_discrete(expand=c(0,0)) +
+  theme(axis.text.x = element_text(angle = 45, hjust=1))
+```
+
+```{r, fig.height=6.4, fig.width=8}
+formatted_cors(unicorns_corelation_num, "spearman") %>% 
+  ggplot(aes(measure1, measure2, fill=r, label=round(r_if_sig,2))) +
+  geom_tile() +
+  labs(x = NULL, y = NULL, fill = "Spearman's\nCorrelation", title="Correlations in Unicorn_Corelation", subtitle="Only significant Pearson's correlation coefficients shown") +
+  scale_fill_gradient2(mid="#FBFEF9",low="#0C6291",high="#A63446", limits=c(-1,1)) +
+  geom_text() +
+  theme_classic() +
+  scale_x_discrete(expand=c(0,0)) +
+  scale_y_discrete(expand=c(0,0)) +
+  theme(axis.text.x = element_text(angle = 45, hjust=1))
+```
+
+# Corelation : Khi2 and Fisher
+```{r}
+column_names <- colnames(unicorns_corelation_num)
+result_list <- lapply(column_names, function(i) {
+  lapply(column_names, function(j) {
+    value <- chisq.test(factor(unicorns_corelation_num[[i]]), 
+                        factor(unicorns_corelation_num[[j]]))$p.value
+    return(data.frame(mesure1 = i, mesure2 = j, value = value))
+  })
+})
+result_df_2 <- do.call(rbind, unlist(result_list, recursive = FALSE))
+
+```
+
+```{r}
+unicorns_corelation_cat = unicorn_data_complete %>% 
+  select(-c(date_added, select_investors, associated_companies, valuation_billions))
+colnames(unicorns_corelation_cat)
+
+
+
+mesure1 = c()
+mesure2 = c()
+value=c()
+for (i in colnames(unicorns_corelation_num)) {
+  for (j in colnames(unicorns_corelation_num)) {
+    mesure1=c(mesure1, i)
+    mesure2=c(mesure2, j)
+    value = c(value,
+      chisq.test(unicorns_corelation_num[[i]], 
+               unicorns_corelation_num[[j]])$p.value
+    )
+  }
+}
+
+colnames(unicorns_corelation_num)
+chisq.test(unicorns_corelation_num$country_code, unicorns_corelation_num$target_code)$p.value
+
+chisq.test(unicorns_corelation_num[["country_code"]], unicorns_corelation_num[["target_code"]])$p.value
+
+chiSqResult$p.value
+
+
+```
 
 ```{r}
 unicorn_data_complete$country<-factor(unicorn_data_complete$country)
@@ -381,6 +464,8 @@ So we will try the Fisher test :
 FisherResult1 <- fisher.test(table1, simulate.p.value = TRUE)
 print(FisherResult1)
 
+fisher.test(unicorns_corelation_num$target_code, unicorns_corelation_num$country_code,simulate.p.value = TRUE)
+
 FisherResult2 <- fisher.test(table2, simulate.p.value = TRUE)
 print(FisherResult2)
 
@@ -414,7 +499,6 @@ print(FisherResult11)
 FisherResult12 <- fisher.test(table12, simulate.p.value = TRUE)
 print(FisherResult12)
 ```
-
 
 # Model Building
 
@@ -503,7 +587,6 @@ CrossTable(tree_prediction_test, test$target, prop.chisq=FALSE,
            chisq=FALSE, prop.t=FALSE, dnn = c("Predicted", "Actual"))
 ```
 
-
 # Naïve Bayes
 
 ```{r}
@@ -512,6 +595,7 @@ library(e1071)  # For Naive Bayes
 ```
 
 ## Train the Naive Bayes model
+
 ```{r}
 naive_bayes_model <- naiveBayes(target ~ year_added + age + Number_of_Investors + 
                                   associated_count + associated_count_over5Bill + 
@@ -521,4 +605,3 @@ naive_bayes_model <- naiveBayes(target ~ year_added + age + Number_of_Investors 
 
 
 ```
-
