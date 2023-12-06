@@ -9,9 +9,13 @@ output: word_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+# Project Presentation:
+
+Our model aims to assist investors in the decision-making process of making a good investment. In other words, a unicorn business that will reach 5 billion \$ is considered as a wise choice to invest in, from the data available, their valuations are more like to grow over time so provide a huge ROI. Basically, our model predicts whether it is a good investment (Valuation\>5 billion) or not.
+
 ## Loading packages
 
-```{r, warning=FALSE}
+```{r warning=FALSE, include=FALSE}
 # Load the package
 library(tidyverse)
 
@@ -27,7 +31,7 @@ library(plotly) # to have dynamic plot
 
 ## Custom made functions
 
-```{r}
+```{r warning=FALSE, include=FALSE}
 names_sort_count = function(data, decreasing=TRUE){
   return(
   data %>% 
@@ -72,8 +76,8 @@ chisq_test_corr = function(data_frame=unicorns_corelation){
 fisher_test_corr = function(data_frame=unicorns_corelation){
   column_names = colnames(data_frame)
   result_list <- lapply(column_names, function(i) {
-      value <- fisher.test(data_frame$target_code, 
-                    data_frame[[i]], simulate.p.value = TRUE)$p.value
+      value <- fisher.test(factor(data_frame$target_code), 
+                    factor(data_frame[[i]]), simulate.p.value = TRUE)$p.value
       return(data.frame(measure1 = "target_code", measure2 = i, p_value = value))
   })
   
@@ -85,14 +89,26 @@ fisher_test_corr = function(data_frame=unicorns_corelation){
 
 # Data Processing
 
-```{r}
+We took the data from: <https://www.cbinsights.com/research-unicorn-companies>. It contains all the unicorn companies as of september 2023.A unicorn company, or unicorn startup, is a private company with a valuation over \$1 billion. Popular former unicorns include Airbnb, Facebook, and Google.
+
+```{r, warning=FALSE}
 # Load the data
 unicorn_data <- read_excel("../DataSets/CB-Insights_Global-Unicorn-Club_2023.xlsx")
 ```
 
 ## Cleaning the data
 
-```{r pressure}
+Our first step after loading the dataset is to clean it. Thus we took the following cleaning steps :
+
+-   Making sure that there are no duplicated rows in our data set
+
+-   Making sure that all the columns contain coherent information.
+
+    -   For instance in some rows, for the country columns there were names of cities.
+
+-   And we also made sure that the data is loaded in the right format
+
+```{r warning=FALSE, include=FALSE}
 # Renaming Columns
 colnames(unicorn_data) <- c('company','valuation_billions','date_added','country','city','industry','select_investors')
 
@@ -117,20 +133,59 @@ unicorn_data <- subset(unicorn_data, select = -city)
 # Removing ",," in "Select investors" correctly count  number of investors
 unicorn_data$select_investors <- gsub(",,", ",", unicorn_data$select_investors)
 
-# Counting the number of Investors
-unicorn_data$Number_of_Investors <- sapply(strsplit(as.character(unicorn_data$select_investors), ","), length)
-
 # Replacing City names in the country variable
 unicorn_data$country <- gsub("London", "United Kingdom", unicorn_data$country)
 unicorn_data$country <- gsub("Munchen", "Germany", unicorn_data$country)
+
+# Year Conversion 
+unicorn_data$date_added = ymd(unicorn_data$date_added)
+
+
+unicorn_data$industry = factor(unicorn_data$industry)
+unicorn_data$country = factor(unicorn_data$country)
+```
+
+## Enriching the Data
+
+Once the data was cleaned we were faced with the next data preparation step, enriching the data. Thus, we created the following new columns :
+
+-   Number of Investors : the number of investors each company has, they range from 1 to 4 investors
+
+-   Continent : Based on the country the company is coming from we inferred the continent
+
+-   Age : Number of years the company has been an Unicorn
+
+-   Year_added : The year the company became an Unicorn
+
+Initially these were the only new columns we created. However after we did the correlation analysis and the model building we realized that they were not enough to predict if a company is going to reach the 5 billion target or not.\
+Thus, we decided that further analysis regarding the investors column needed to be done in order to engineer new variables that will improve our model. The new columns we created are :
+
+-   Associated companies : The companies that are linked to one another through one or more investors.
+
+-   Associated_count : The number of companies associated (leaving out the company we are looking at)
+
+-   Associated_count_over5B : The number of associated companies that have a valuation over 5 billion.
+
+-   Associated_percentage_over5B : The percentage of associated companies that have a valuation over 5 billion, out of the total associated companies
+
+-   Associated_total_value : the total valuation of the unicorn and the the associated companies
+
+-   Associated_mean_value : the mean valuation of the unicorn and the associated companies
+
+-   Investments_avg_pct_over5B : the average percentage of a Unicorn's associate companies with a valuation over 5 Billion per investor
+
+```{r warning=TRUE, include=FALSE}
+# Counting the number of Investors
+unicorn_data$Number_of_Investors <- sapply(strsplit(as.character(unicorn_data$select_investors), ","), length)
+
 
 # continent Values
 unicorn_data$continent = countrycode(sourcevar = unicorn_data$country,
                             origin = "country.name",
                             destination = "continent")
+unicorn_data$continent = factor(unicorn_data$continent)
 
-# Year Conversion 
-unicorn_data$date_added = ymd(unicorn_data$date_added)
+
 
 # Years since Joined
 unicorn_data$age = interval(unicorn_data$date_added, now()) %/% years(1)
@@ -141,18 +196,10 @@ unicorn_data$year_added <- year(unicorn_data$date_added)
 unicorn_data <- unicorn_data %>%
   mutate(target = 
            ifelse(valuation_billions >= 5, "Over 5 $B",  "Under 5 $B") %>% as.factor()) %>% 
-  mutate(target_code = as.numeric(target) ) %>% 
+  mutate(target_code = ifelse(valuation_billions >= 5, 1, 0)) %>% 
   # Making Sure each company name is well differentiated from one another
   mutate(company = paste(row.names(unicorn_data), unicorn_data$company))
-  
-unicorn_data$industry = factor(unicorn_data$industry)
-unicorn_data$continent = factor(unicorn_data$continent)
-unicorn_data$country = factor(unicorn_data$country)
-```
 
-## Enriching the Data
-
-```{r}
 # Creating an intermediary dataframe for later computations
 unicorn_transition <- unicorn_data %>%
   mutate(select_investors = strsplit(select_investors, ",")) %>% 
@@ -246,8 +293,9 @@ unicorn_data_complete = unicorn_data_complete %>%
 
 # Plots to explore the Data
 
-```{r}
+With the four next plots we wanted to explore the distribution of the unicorn companies in order to have a better understanding of the domain.
 
+```{r}
 ggplot(unicorn_data, aes(x = industry)) +
   geom_bar(stat = "count", fill = "steelblue") +
   labs(title = "Distribution of the number of companies per industry") +
@@ -255,6 +303,12 @@ ggplot(unicorn_data, aes(x = industry)) +
   xlim(names_sort_count(unicorn_data$industry))
 
 ```
+
+When we take a look at the industry of origin of the unicors we can see that most of them are tech companies. This is not surprising taking in consideration the enthusiasm around artificial intelligence and big data.
+
+Coming next are finance, consumer & retail and industry, with nearly 200 companies each.
+
+At the other and of the spectrum, with under 100 unicorns we have media&entertainment and insurance.
 
 ```{r}
 ggplot(unicorn_data, aes(x = country)) +
@@ -264,13 +318,18 @@ ggplot(unicorn_data, aes(x = country)) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
 
+In regards to the distribution of the companies per country, the US has a clear advance on the other countries with more than 600 unicorns, which is half of the total population of unicorns. On second place we have China with less then 200 companies, folowed by India with less then 100 companies.
+
 ```{r}
 ggplot(unicorn_data, aes(x = continent)) +
   geom_bar(stat = "count", fill = "steelblue") +
   xlim(names_sort_count(unicorn_data$continent))+
   labs(title = "Distribution of the number of companies per country") +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
 ```
+
+As expected, the continent with the most unicorns is the Americas, with the huge contribution of the US. On second place we have Asia with the contribution of China and India followed by Europe led by the Uk, Germany and France.
 
 ```{r}
 ggplot(unicorn_data, aes(x = Number_of_Investors, fill = industry)) +
@@ -279,9 +338,11 @@ ggplot(unicorn_data, aes(x = Number_of_Investors, fill = industry)) +
   scale_fill_paletteer_d("awtools::a_palette")
 ```
 
-# Corelation : Pearson and Spearman
+This plot shows that most unicorn companies have 3 investors but very little 4 investors. This is true across all industries. The unicorn with 1 or 2 investors are a minority among the present population.
 
-```{r}
+# Correlation : Pearson and Spearman
+
+```{r include=FALSE}
 unicorns_corelation = unicorn_data_complete %>% 
   select(-c(date_added, select_investors, associated_companies, valuation_billions)) %>% 
   mutate(country_code = as.numeric(country)) %>% 
@@ -292,7 +353,7 @@ unicorns_corelation %>%
   summary()
   
 unicorns_corelation = unicorns_corelation %>% 
-  select(-c(company, country, industry, target, continent, year_added))
+  select(-c(company, country, industry, target, continent))
 ```
 
 ## Correlation Matrix
@@ -314,7 +375,7 @@ formatted_cors(unicorns_corelation) %>%
 formatted_cors(unicorns_corelation, "spearman") %>% 
   ggplot(aes(measure1, measure2, fill=r, label=round(r_if_sig,2))) +
   geom_tile() +
-  labs(x = NULL, y = NULL, fill = "Spearman's\nCorrelation", title="Correlations in Unicorn_Corelation", subtitle="Only significant Pearson's correlation coefficients shown") +
+  labs(x = NULL, y = NULL, fill = "Spearman's\nCorrelation", title="Correlations in Unicorn_Corelation", subtitle="Only significant Spearman's correlation coefficients shown") +
   scale_fill_gradient2(mid="#FBFEF9",low="#0C6291",high="#A63446", limits=c(-1,1)) +
   geom_text() +
   theme_classic() +
@@ -324,6 +385,7 @@ formatted_cors(unicorns_corelation, "spearman") %>%
 ```
 
 # Corelation : Khi2 and Fisher
+
 ```{r}
 chisq_test_data = chisq_test_corr() 
 
@@ -362,9 +424,8 @@ fisher_test_data %>%
   scale_y_continuous(breaks = seq(0, 1, 0.1), labels = scales::percent_format(scale = 1)) +
   geom_hline(yintercept = 0.05, linetype = "dashed", color = "red")+
   xlim(fisher_test_data$measure2)+
-  labs(x = NULL, title="Fisher correlations between all varaibles and Target")
+  labs(x = NULL, title="Fisher correlations between all variables and Target")
 ```
-
 
 # Model Building
 
@@ -460,21 +521,29 @@ CrossTable(tree_prediction_test, test$target, prop.chisq=FALSE,
 library(e1071)  # For Naive Bayes
 ```
 
-## Train the Naive Bayes model
+## Dataset splitting
+
 ```{r}
-unicorn_data_complete$country<-factor(unicorn_data_complete$country)
-unicorn_data_complete$industry<-factor(unicorn_data_complete$industry)
-unicorn_data_complete$continent<-factor(unicorn_data_complete$continent)
-unicorn_data_complete$Number_of_Investors<-factor(unicorn_data_complete$Number_of_Investors)
-unicorn_data_complete$year_added<-factor(unicorn_data_complete$year_added)
-unicorn_data_complete$age<-factor(unicorn_data_complete$age)
-unicorn_data_complete$associated_count<-factor(unicorn_data_complete$associated_count)
-unicorn_data_complete$associated_count_over5Bill<-factor(unicorn_data_complete$associated_count_over5Bill)
-unicorn_data_complete$associated_pct_over5Bill<-factor(unicorn_data_complete$associated_pct_over5Bill)
-unicorn_data_complete$association_total_value<-factor(unicorn_data_complete$association_total_value)
-unicorn_data_complete$association_mean_value<-factor(unicorn_data_complete$association_mean_value)
-unicorn_data_complete$investements_avg_pct_over5B<-factor(unicorn_data_complete$investements_avg_pct_over5B)
+unicorn_model = unicorn_data_complete %>% 
+  select(c(target, age, associated_pct_over5Bill, association_mean_value, association_total_value, investements_avg_pct_over5B, Number_of_Investors, associated_count, associated_count_over5Bill, year_added))
+
 ```
+
+```{r}
+# Training set and test set
+set.seed(100)
+row.number <- sample(1:nrow(unicorn_model), 0.8*nrow(unicorn_model))
+train=unicorn_model[row.number,]
+test=unicorn_model[-row.number,]
+
+# Splitting efficiency check 
+
+prop.table(table(unicorn_model$target))
+prop.table(table(train$target))
+prop.table(table(test$target))
+```
+
+## Train the Naive Bayes model
 
 ```{r}
 naive_bayes_model <- naiveBayes(target ~ year_added + age + Number_of_Investors + 
@@ -483,5 +552,48 @@ naive_bayes_model <- naiveBayes(target ~ year_added + age + Number_of_Investors 
                                   association_mean_value + investements_avg_pct_over5B, 
                                 data = train)
 
+predictions <- predict(naive_bayes_model, newdata = test)
+
+```
+
+```{r}
+
+# Create a confusion matrix
+confusion_matrix <- table(Predicted = predictions, Actual = test$target)
+# Convert the confusion matrix to a data frame for plotting
+conf_matrix_df <- as.data.frame(confusion_matrix)
+# Assign row names as a new column in the data frame
+conf_matrix_df$Actual <- rownames(conf_matrix_df)
+
+# Print the confusion matrix
+print(confusion_matrix)
+
+# Calculate and print the accuracy of the model
+accuracy <- sum(diag(confusion_matrix)) / sum(confusion_matrix)
+
+print(paste("Accuracy: ", accuracy))
+```
+
+```{r}
+# Train a new Naive Bayes model with the different predictors
+naive_bayes_model_new <- naiveBayes(target ~ age + Number_of_Investors + 
+                                  associated_pct_over5Bill + association_total_value + 
+                                  association_mean_value + investements_avg_pct_over5B, 
+                                data = train)
+predictions <- predict(naive_bayes_model, newdata = test)
+# Create a confusion matrix
+confusion_matrix <- table(Predicted = predictions, Actual = test$target)
+# Convert the confusion matrix to a data frame for plotting
+conf_matrix_df <- as.data.frame(confusion_matrix)
+# Assign row names as a new column in the data frame
+conf_matrix_df$Actual <- rownames(conf_matrix_df)
+
+# Print the confusion matrix
+print(confusion_matrix)
+
+# Calculate and print the accuracy of the model
+accuracy <- sum(diag(confusion_matrix)) / sum(confusion_matrix)
+
+print(paste("Accuracy: ", accuracy))
 
 ```
