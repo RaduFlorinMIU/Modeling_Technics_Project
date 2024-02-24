@@ -27,6 +27,13 @@ library(magrittr) # to use the pipe
 library(hrbrthemes) # different themes for ggplot2 
 library(paletteer)
 library(plotly) # to have dynamic plot
+
+# Machine learning 
+library(rpart)
+library(rpart.plot)
+library(gmodels) 
+library(e1071)  # For Naive Bayes
+
 ```
 
 ## Custom made functions
@@ -463,7 +470,6 @@ summary(logit_model)
 ## Performance evaluation
 
 ```{r}
-library(gmodels) 
 logit_prediction_test <- predict(logit_model, newdata = test, type = "response")
 
 prop.table(table(logit_prediction_test >0.5,test$target))
@@ -473,11 +479,6 @@ chisq=FALSE,prop.t=FALSE,dnn = c("Predicted","Actual"))
 ```
 
 # Decision Tree
-
-```{r Library}
-library(rpart)
-library(rpart.plot)
-```
 
 ##Train Decision Tree model
 
@@ -515,11 +516,6 @@ CrossTable(tree_prediction_test, test$target, prop.chisq=FALSE,
 ```
 
 # Naïve Bayes
-
-```{r}
-# Load necessary libraries
-library(e1071)  # For Naive Bayes
-```
 
 ## Dataset splitting
 
